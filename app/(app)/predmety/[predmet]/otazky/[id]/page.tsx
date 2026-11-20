@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { RouteLoading } from "@/components/loading";
-import { BookOpen, BookX, ChevronLeft, Clock3, Ellipsis, History, Mic, Network } from "lucide-react";
+import { BookOpen, BookX, ChevronLeft, Clock3, History, Mic, Network } from "lucide-react";
 import type { Metadata } from "next";
 import { BookmarkButton, ReportSourceButton } from "@/components/actions";
 import { DataIcon } from "@/components/icon";
@@ -41,12 +41,11 @@ async function QuestionPageContent({ params }: PageProps<"/predmety/[predmet]/ot
           <Breadcrumb back="/" items={[...q.trail.map((label) => ({ label })), { label: `Otázka ${q.id}` }]} />
           <div className="flex-1" />
           <BookmarkButton />
-          <GlassIconButton icon={Ellipsis} label="Další akce" aria-disabled />
         </TopBar>
         <header className="mt-[34px] flex flex-col gap-3">
           {d && (
             <div className="flex gap-1.5">
-              <Chip icon={Mic}>{d.tags[0]}</Chip>
+              <Chip icon={d.tags[0].startsWith("Ústní") ? Mic : undefined}>{d.tags[0]}</Chip>
               <Chip>{d.tags[1]}</Chip>
             </div>
           )}
@@ -86,7 +85,6 @@ async function QuestionPageContent({ params }: PageProps<"/predmety/[predmet]/ot
           <div className="flex-1" />
           <div className="glass-thin flex h-11 items-center rounded-full px-1 [--g-y:6px] [--g-b:20px]">
             <BookmarkButton size={36} bare />
-            <GlassIconButton icon={Ellipsis} label="Další akce" size={36} variant="plain" aria-disabled />
           </div>
         </div>
         <div className="mt-4 flex gap-1.5">
@@ -111,9 +109,11 @@ async function QuestionPageContent({ params }: PageProps<"/predmety/[predmet]/ot
                 <GlassButton href={questionHref(q, "studium")} icon={BookOpen} variant="solid" size={44} full className="flex-1">
                   Studovat
                 </GlassButton>
-                <GlassButton href={questionHref(q, "mapa")} icon={Network} variant="solid" size={44} full className="flex-1">
-                  Mapa
-                </GlassButton>
+                {d.map && (
+                  <GlassButton href={questionHref(q, "mapa")} icon={Network} variant="solid" size={44} full className="flex-1">
+                    Mapa
+                  </GlassButton>
+                )}
               </div>
             </section>
             <h2 className="mt-6 text-[20px] font-semibold tracking-[-0.4px]">Studijní osnova</h2>
@@ -138,9 +138,11 @@ function QuestionActions({ q }: { q: Question }) {
       <GlassButton href={questionHref(q, "studium")} icon={BookOpen} variant="solid" size={44}>
         Studovat
       </GlassButton>
-      <GlassButton href={questionHref(q, "mapa")} icon={Network} variant="solid" size={44}>
-        Mapa pojmů
-      </GlassButton>
+      {q.detail?.map && (
+        <GlassButton href={questionHref(q, "mapa")} icon={Network} variant="solid" size={44}>
+          Mapa pojmů
+        </GlassButton>
+      )}
       <span className="w-px" />
       <span className="flex items-center gap-1.5 text-[13px] text-muted">
         <Clock3 size={15} strokeWidth={1.5} aria-hidden />

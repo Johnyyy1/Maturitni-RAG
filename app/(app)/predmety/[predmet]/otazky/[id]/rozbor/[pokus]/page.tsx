@@ -1,4 +1,4 @@
-import { BookOpen, ChevronLeft, CircleAlert, CornerDownRight, Ellipsis, FileCheck, FileText, Info, Minus, Network, Check, Share } from "lucide-react";
+import { BookOpen, ChevronLeft, CircleAlert, CornerDownRight, FileCheck, FileText, Info, Minus, Network, Check } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -46,19 +46,12 @@ async function ReviewContent({ params }: Props) {
     <div className="hidden lg:contents">
     <TopBar>
       <Breadcrumb back={questionHref(q)} items={[{ label: `Otázka ${q.id}` }, { label: "Rozbor pokusu" }]} />
-      <div className="flex-1" />
-      <GlassIconButton icon={Ellipsis} label="Další akce" aria-disabled />
     </TopBar>
     </div>
   );
   const mobileBar = (
     <div className="sticky top-3 z-20 flex h-11 items-center gap-2 lg:hidden">
       <GlassIconButton href={questionHref(q)} icon={ChevronLeft} label="Zpět na otázku" size={44} />
-      <div className="flex-1" />
-      <div className="glass-thin flex h-11 items-center rounded-full px-1 [--g-b:20px] [--g-y:6px]">
-        <GlassIconButton icon={Share} label="Sdílet" size={36} variant="plain" aria-disabled />
-        <GlassIconButton icon={Ellipsis} label="Další akce" size={36} variant="plain" aria-disabled />
-      </div>
     </div>
   );
 

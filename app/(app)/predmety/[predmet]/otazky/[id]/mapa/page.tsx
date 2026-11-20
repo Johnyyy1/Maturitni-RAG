@@ -8,7 +8,7 @@ import { conceptMap } from "@/lib/mock/study";
 
 type Props = PageProps<"/predmety/[predmet]/otazky/[id]/mapa">;
 
-/** Only question dejepis/7 has a concept map in the package. */
+/** Only question dejepis/7 has a concept map in the package (`detail.map`). */
 export function generateStaticParams() {
   return [{ predmet: "dejepis", id: "7" }];
 }
@@ -25,6 +25,6 @@ export default function MapPage(props: Props) {
 
 async function MapContent({ params }: Props) {
   const { question } = await loadQuestion(params);
-  if (question.subject !== "dejepis" || question.id !== "7") notFound();
+  if (!question.detail?.map) notFound();
   return <ConceptMap question={question} nodes={conceptMap.nodes} edges={conceptMap.edges} />;
 }

@@ -27,17 +27,17 @@ export const subjects: Subject[] = [
 export const today = {
   dateLabel: "Pátek 20. listopadu",
   greeting: "Dobré ráno",
+  /** Question in progress. Title, progress and link come from the question itself. */
   continueItem: {
-    title: "Kvadratická funkce",
+    subject: "matematika",
+    id: "4",
     meta: "Matematika · Funkce · otázka 4",
-    mobileMeta: "Matematika · otázka 4 · 6 z 10 kroků",
+    mobileMeta: "Matematika · otázka 4",
     badge: "Rozpracováno včera",
     mobileBadge: "Rozpracováno",
-    stepsDone: 6,
-    stepsTotal: 10,
-    href: "/predmety/matematika/otazky/4",
     vertex: "V = [0; 0]",
   },
+
 };
 
 export const dueItems: DueItem[] = [

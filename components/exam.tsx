@@ -8,7 +8,8 @@ import { IconSwap } from "@/components/ui/icon-swap";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { ActionBar, capsule, FocusBar } from "@/components/focus";
-import { GlassIconButton, PrimaryPill } from "@/components/ui/buttons";
+import { GlassButton, GlassIconButton, PrimaryPill } from "@/components/ui/buttons";
+import { Sheet } from "@/components/ui/sheet";
 import { submitAttempt } from "@/lib/api";
 import { questionHref } from "@/lib/mock/questions";
 import { plural } from "@/lib/plural";
@@ -75,6 +76,7 @@ function TextTask({ question }: { question: Question }) {
   const [text, setText] = useState("");
   const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
   const [submission, setSubmission] = useState<"idle" | "sending" | "sent">("idle");
+  const [confirming, setConfirming] = useState(false);
   const reduce = useReducedMotion();
   const words = text.trim() ? text.trim().split(/\s+/).length : 0;
   const fieldId = useId();
@@ -103,9 +105,13 @@ function TextTask({ question }: { question: Question }) {
     return () => clearTimeout(t);
   }, [text, key, saveState]);
 
-  async function submit(e: FormEvent) {
+  function submit(e: FormEvent) {
     e.preventDefault();
-    if (!words || submission !== "idle" || !window.confirm("Odevzdat odpověď a otevřít rozbor?")) return;
+    if (words && submission === "idle") setConfirming(true);
+  }
+
+  async function send() {
+    setConfirming(false);
     setSubmission("sending");
     try {
       const { attempt } = await submitAttempt(question.subject, question.id, text);
@@ -194,13 +200,30 @@ function TextTask({ question }: { question: Question }) {
         {submitButton(44)}
         {submitButton(52)}
       </ActionBar>
+
+      <Sheet open={confirming} onClose={() => setConfirming(false)} label="Odevzdat odpověď?">
+        <div className="flex flex-col gap-1.5 px-5 pt-2 pb-5">
+          <h2 className="text-[22px] font-semibold tracking-[-0.5px]">Odevzdat odpověď?</h2>
+          <p className="text-[15px] leading-[1.5] text-muted">
+            <span className="tnum font-medium text-fg">{plural(words, "slovo", "slova", "slov")}</span> · Po odevzdání už odpověď neupravíš a otevře se rozbor.
+          </p>
+          <div className="mt-4 flex gap-2">
+            <GlassButton variant="solid" size={44} full className="flex-1" onClick={() => setConfirming(false)}>
+              Ještě upravit
+            </GlassButton>
+            <PrimaryPill size={44} full className="flex-1" onClick={() => void send()}>
+              Odevzdat
+            </PrimaryPill>
+          </div>
+        </div>
+      </Sheet>
     </form>
   );
 }
 
 function NumberTask({ question, exam }: { question: Question; exam: ExamNumber }) {
   const [value, setValue] = useState("");
-  const [unit, setUnit] = useState(exam.units[0]);
+  const [unit, setUnit] = useState(exam.units?.[0]);
   const [work, setWork] = useState("");
   const [result, setResult] = useState<"ok" | "bad" | null>(null);
   const ids = { value: useId(), unit: useId(), work: useId() };
@@ -238,6 +261,7 @@ function NumberTask({ question, exam }: { question: Question; exam: ExamNumber }
               className={cn(field, "tnum h-[52px] px-4 text-[20px] font-semibold")}
             />
           </div>
+          {exam.units && (
           <div className="flex w-[120px] flex-col gap-2">
             <label htmlFor={ids.unit} className="text-[13px] font-semibold">
               Jednotka
@@ -263,6 +287,7 @@ function NumberTask({ question, exam }: { question: Question; exam: ExamNumber }
               </Select.Portal>
             </Select.Root>
           </div>
+          )}
         </div>
         <div className="mt-[18px] flex flex-col gap-2">
           <label htmlFor={ids.work} className="flex gap-1.5 text-[13px]">
@@ -292,7 +317,7 @@ function NumberTask({ question, exam }: { question: Question; exam: ExamNumber }
               <CircleX size={16} strokeWidth={2} className="text-error" aria-hidden />
               <span className="font-semibold text-error">Nesprávně</span>
               <span className="tnum">
-                · správně je {exam.key.value} {exam.key.unit}
+                · správně je {[exam.key.value, exam.key.unit].filter(Boolean).join(" ")}
               </span>
             </>
           )}

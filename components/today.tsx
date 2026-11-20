@@ -3,6 +3,7 @@ import Link from "next/link";
 import { DataIcon } from "@/components/icon";
 import { GlassButton, PrimaryPill } from "@/components/ui/buttons";
 import { Card, ProgressTrack } from "@/components/ui/bits";
+import { questionHref, questions } from "@/lib/mock/questions";
 import { dueItems, subjects, today, week } from "@/lib/mock/subjects";
 import { plural } from "@/lib/plural";
 import { cn } from "@/lib/cn";
@@ -10,6 +11,11 @@ import type { DueStatus } from "@/lib/types";
 
 const dot: Record<DueStatus, string> = { wrong: "bg-error", cards: "bg-warning", planned: "bg-accent" };
 const c = today.continueItem;
+const continueQuestion = questions.find((q) => q.subject === c.subject && q.id === c.id)!;
+const steps = continueQuestion.detail!.outline;
+const stepsDone = steps.filter((s) => s.state === "done").length;
+const progressLabel = `${stepsDone} z ${steps.length} kroků`;
+const continueHref = questionHref(continueQuestion);
 
 /** Hero card “Pokračovat” (desktop 21). */
 export function HeroDesktop() {
@@ -21,11 +27,11 @@ export function HeroDesktop() {
           <History size={14} strokeWidth={2} aria-hidden />
           {c.badge}
         </span>
-        <h2 className="mt-[18px] text-[36px] leading-[1.1] font-semibold tracking-[-1px]">{c.title}</h2>
+        <h2 className="mt-[18px] text-[36px] leading-[1.1] font-semibold tracking-[-1px]">{continueQuestion.title}</h2>
         <p className="mt-2 text-[15px] font-medium text-white/72">{c.meta}</p>
         <div className="flex-1" />
         <div className="flex items-center gap-3">
-          <PrimaryPill href={c.href} tone="light" arrow>
+          <PrimaryPill href={continueHref} tone="light" arrow>
             Pokračovat
           </PrimaryPill>
           <GlassButton href="/karticky" icon={Layers2} variant="hero">
@@ -33,9 +39,9 @@ export function HeroDesktop() {
           </GlassButton>
           <div className="flex flex-col gap-1.5 pl-3">
             <span className="tnum text-[12px] font-semibold">
-              {c.stepsDone} z {c.stepsTotal} kroků
+              {progressLabel}
             </span>
-            <ProgressTrack value={c.stepsDone / c.stepsTotal} className="h-1 w-[120px]" track="bg-white/20" fill="bg-white" label="Postup tématem" animateFill />
+            <ProgressTrack value={stepsDone / steps.length} className="h-1 w-[120px]" track="bg-white/20" fill="bg-white" label="Postup tématem" animateFill />
           </div>
         </div>
       </div>
@@ -77,10 +83,10 @@ export function HeroMobile() {
         <History size={13} strokeWidth={2} aria-hidden />
         {c.mobileBadge}
       </span>
-      <h2 className="mt-3.5 text-[26px] font-semibold tracking-[-0.6px]">{c.title}</h2>
-      <p className="tnum mt-1 text-[13px] font-medium text-white/72">{c.mobileMeta}</p>
-      <ProgressTrack value={c.stepsDone / c.stepsTotal} className="mt-3.5 h-[5px] w-full" track="bg-white/20" fill="bg-white" label="Postup tématem" animateFill />
-      <PrimaryPill href={c.href} tone="light" arrow size={48} full className="mt-[18px] text-[15px]">
+      <h2 className="mt-3.5 text-[26px] font-semibold tracking-[-0.6px]">{continueQuestion.title}</h2>
+      <p className="tnum mt-1 text-[13px] font-medium text-white/72">{c.mobileMeta} · {progressLabel}</p>
+      <ProgressTrack value={stepsDone / steps.length} className="mt-3.5 h-[5px] w-full" track="bg-white/20" fill="bg-white" label="Postup tématem" animateFill />
+      <PrimaryPill href={continueHref} tone="light" arrow size={48} full className="mt-[18px] text-[15px]">
         Pokračovat
       </PrimaryPill>
     </section>

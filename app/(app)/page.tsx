@@ -1,7 +1,5 @@
 import { TodaySession } from "@/components/today-session";
-import { Bell } from "lucide-react";
 import { TopBar } from "@/components/shell/app-shell";
-import { GlassIconButton } from "@/components/ui/buttons";
 import { GlassSearch } from "@/components/ui/search";
 import { DueCard, DueList, HeroDesktop, HeroMobile, MobileSubjects, SubjectsCard, WeekCard } from "@/components/today";
 import { student, today } from "@/lib/mock/subjects";
@@ -15,7 +13,6 @@ export default function TodayPage() {
         <TopBar>
           <div className="flex-1" />
           <GlassSearch />
-          <GlassIconButton icon={Bell} label="Oznámení" aria-disabled title="Oznámení připravujeme" />
         </TopBar>
         <header className="today-enter mt-[34px] flex flex-col gap-1.5">
           <p className="text-[13px] font-medium text-muted">{today.dateLabel}</p>

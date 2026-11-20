@@ -6,7 +6,6 @@ import { ReportSourceButton } from "@/components/actions";
 import { StudyView } from "@/components/study";
 import { GlassIconButton } from "@/components/ui/buttons";
 import { StateCard } from "@/components/ui/state";
-import { initialThread } from "@/lib/api";
 import { loadQuestion, questionParams } from "@/lib/load";
 import { questionHref } from "@/lib/mock/questions";
 
@@ -45,5 +44,5 @@ async function StudyPageContent({ params }: PageProps<"/predmety/[predmet]/otazk
     );
   }
 
-  return <StudyView question={question} initialThread={initialThread} />;
+  return <StudyView question={question} />;
 }

@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { questionHref, questions } from "../lib/mock/questions";
 
 /** Navigate and wait for hydration, so keyboard shortcuts are wired up. */
 async function open(page: Page, url: string) {
@@ -83,10 +84,60 @@ test("rozbor bez vyhodnocení ukáže chybový stav", async ({ page }) => {
 });
 
 test("číselná úloha se vyhodnotí podle klíče", async ({ page }) => {
-  await open(page, "/predmety/matematika/otazky/4/zkouska");
-  await page.getByLabel("Výsledek").fill("192");
+  const q = questions.find((x) => x.exam.type === "number")!;
+  if (q.exam.type !== "number") throw new Error("Chybí číselná úloha");
+  const { key } = q.exam;
+  const answer = (value: number) => page.getByLabel("Výsledek").fill(String(value).replace(".", ","));
+
+  await open(page, questionHref(q, "zkouska"));
+  await answer(key.value + 1);
+  await page.getByRole("button", { name: "Odevzdat" }).click();
+  await expect(page.getByText("Nesprávně", { exact: true })).toBeVisible();
+
+  await open(page, questionHref(q, "zkouska"));
+  await answer(key.value);
+  if (key.unit && key.unit !== q.exam.units?.[0]) {
+    await page.getByLabel("Jednotka").click();
+    await page.getByRole("option", { name: key.unit }).click();
+  }
   await page.getByRole("button", { name: "Odevzdat" }).click();
   await expect(page.getByText("Správně", { exact: true })).toBeVisible();
+});
+
+test("Vyzkoušet se otevře zkoušku se zadáním dané otázky", async ({ page }) => {
+  for (const q of questions.filter((x) => x.detail)) {
+    await open(page, questionHref(q));
+    const prompt = await page.locator('section[aria-labelledby="zadani"] p').innerText();
+    await page.locator('section[aria-labelledby="zadani"]').getByRole("link", { name: "Vyzkoušet se" }).click();
+    await expect(page).toHaveURL(new RegExp(`${questionHref(q, "zkouska")}$`));
+    await expect(page.locator("#uloha, #ukol").locator("..")).toContainText(prompt);
+  }
+});
+
+for (const width of [1440, 390]) {
+  test(`Dnes nevede na prázdný stav ani 404 (${width} px)`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await open(page, "/");
+    const hrefs = await page.locator("main a[href^='/']").evaluateAll((links) =>
+      [...new Set(links.filter((a) => (a as HTMLElement).offsetParent).map((a) => a.getAttribute("href")!))],
+    );
+    expect(hrefs.length).toBeGreaterThan(3);
+    for (const href of hrefs) {
+      const response = await page.goto(href);
+      expect(response?.status(), href).toBeLessThan(400);
+      await expect(page.getByText("K této části nemám ověřený podklad"), href).toHaveCount(0);
+    }
+  });
+}
+
+test("hero ukazuje postup z osnovy rozpracované otázky", async ({ page }) => {
+  await open(page, "/");
+  const hero = page.getByRole("region", { name: "Pokračovat" }).first();
+  const href = await hero.getByRole("link", { name: "Pokračovat" }).getAttribute("href");
+  const q = questions.find((x) => questionHref(x) === href)!;
+  const steps = q.detail!.outline;
+  await expect(hero).toContainText(q.title);
+  await expect(hero).toContainText(`${steps.filter((s) => s.state === "done").length} z ${steps.length} kroků`);
 });
 
 test("mobil: citace otevře bottom sheet @mobile", async ({ page }) => {

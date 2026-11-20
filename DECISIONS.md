@@ -36,12 +36,15 @@ Zdroj pravdy je `design/MaturitaRAG.pen`, framy 20–39 („· Glass“) a jejic
 - **Citace ve streamované odpovědi** jsou v textu jako malé číslo `[n]` (tlačítko) a pod odpovědí jako čipy. Úvodní odpověď z designu má jen čipy. Aktivní čip je ten, jehož zdroj je otevřený v inspektoru.
 - **Konec kvízu** design nemá, proto používá kartu „Hotovo“ z framu 33.
 - **Počet otázek** z nastavení kvízu se předává jako `?pocet=`.
-- **Mapa pojmů** existuje jen pro `dejepis/7`. Uzly bez detailu ukazují v inspektoru navazující pojmy z grafu. Zoom má rozsah 50–200 % a tlačítko „přizpůsobit“. „Seznam vazeb“ přepne plátno na přístupný seznam a na mobilu je seznam místo plátna.
+- **Mapa pojmů** existuje jen pro `dejepis/7` (`detail.map`); u ostatních otázek se odkazy na mapu nezobrazují. Každý pojem má krátké vysvětlení s citací podkladu a navazující pojmy z grafu. Zoom má rozsah 50–200 % a tlačítko „přizpůsobit“. „Seznam vazeb“ přepne plátno na přístupný seznam a na mobilu je seznam místo plátna.
 - **⌘K** hledá v otázkách a stránkách bez ohledu na diakritiku.
 
 ## Akce, které design nekreslí
 
-Viditelné, ale neaktivní (`aria-disabled`, titulek „…připravujeme“): Pokrok, redakční Balíčky / Otázky / Publikace / Ověřování, Oznámení, „Více“, Sdílet, příloha a diktování, Celý podklad, Porovnat se vzorovou odpovědí, Zobrazit odpověď (u pokusu bez vyhodnocení), Zadat kód a Zrušit import.
+Pravidlo: co nefunguje a v pilotu nebude, je skryté (Další akce „…“, Sdílet, Oznámení, příloha a diktování v chatu tutora).
+Co přijde brzy, je viditelné, ale zřetelně neaktivní (`aria-disabled`, opacita 45 %, bez hoveru a stisku, textová tlačítka se štítkem „Brzy“): Pokrok, redakční Balíčky / Otázky / Publikace / Ověřování, „Více“, diktování ve zkoušce, Celý podklad, Porovnat se vzorovou odpovědí, Zobrazit odpověď (u pokusu bez vyhodnocení), Zadat kód a Zrušit import.
+Stránka `/design` i její položka v hledání existují jen ve vývojovém režimu; v produkci vrací 404.
+Hero „Pokračovat“ bere název, odkaz i postup („3 z 5 kroků“) z osnovy rozpracované otázky. Zkouška nanečisto ukazuje vždy zadání dané otázky.
 
 Funkční navíc:
 

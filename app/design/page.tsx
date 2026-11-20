@@ -1,5 +1,6 @@
 import { BookOpen, CircleAlert, FileText, KeyRound, Layers2, List, Search, SearchX, X, BookX } from "lucide-react";
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { ReportSourceButton } from "@/components/actions";
 import { DemoTutorUnavailable } from "@/components/design-demos";
@@ -20,6 +21,8 @@ const materials = [
 
 /** Frame 20 (materials and components) and frame 39 (states). */
 export default function DesignPage() {
+  // Internal reference page: development only.
+  if (process.env.NODE_ENV !== "development") notFound();
   return (
     <main id="obsah" className="flex flex-col gap-9 px-4 py-10 lg:p-16">
       <header className="flex flex-col gap-2.5">

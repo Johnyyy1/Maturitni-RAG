@@ -83,6 +83,9 @@ export function GlassButton({ icon: Icon, size = 40, variant = "glass", full, cl
     >
       {Icon && <Icon size={16} strokeWidth={1.75} aria-hidden />}
       {children}
+      {(rest["aria-disabled"] === true || rest["aria-disabled"] === "true") && (
+        <span className="-mr-1.5 rounded-full bg-hover px-1.5 py-0.5 text-[11px] font-semibold text-muted">Brzy</span>
+      )}
     </Action>
   );
 }
