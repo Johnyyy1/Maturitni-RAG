@@ -366,7 +366,7 @@ const TutorAnswer = memo(function TutorAnswer({
             />
             <SmallAction label="Dobrá odpověď" icon={ThumbsUp} pressed={vote === "up"} onClick={() => setVote((v) => (v === "up" ? null : "up"))} />
             <SmallAction label="Špatná odpověď" icon={ThumbsDown} pressed={vote === "down"} onClick={() => setVote((v) => (v === "down" ? null : "down"))} />
-            <Link href={mapHref} aria-label="Zobrazit v mapě pojmů" title="Zobrazit v mapě pojmů" className="hit flex size-8 items-center justify-center rounded-full hover:bg-hover hover:text-fg">
+            <Link href={mapHref} aria-label="Zobrazit v mapě pojmů" title="Zobrazit v mapě pojmů" className="hit press flex size-8 items-center justify-center rounded-full hover:bg-hover hover:text-fg">
               <Network size={16} strokeWidth={1.5} aria-hidden />
             </Link>
           </div>
