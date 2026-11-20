@@ -59,12 +59,12 @@ Akční lišta zůstává na místě. Při zkratce je změna okamžitá, včetn�
 
 | Prvek | Role | Začátek | Délka | Pohyb | Vztah |
 | --- | --- | --- | --- | --- | --- |
-| Odpověď | Lead | 0 ms od odhalení | 180 ms, mezerník 150 ms | Prolnutí, při použití ukazatele blur 2 px | Povrch stojí |
-| Karta při tažení | Lead | Po překročení 10 px | Podle prstu | Sleduje prst, za okrajem pruží | Sleduje gesto |
-| Stará a další karta | Lead | Při uvolnění | Spring / 150 ms | Projekce 0,998 volí návrat nebo směr odhození, další karta nastoupí hned | Další karta nečeká na výstup |
+| Otočení | Lead | 0 ms od odhalení | 650 ms, (0.77, 0, 0.175, 1) | 3D rotace kolem osy Y s mírným zvednutím (scale 1,04), perspektiva 1600 px; při omezeném pohybu prolnutí | Kliknutí i mezerník |
+| Karta při tažení | Lead | Po překročení 10 px | Podle prstu | Sleduje prst a naklání se až o 8°, za okrajem pruží | Sleduje gesto |
+| Stará a další karta | Lead | Při uvolnění | 600 ms morph křivka, balíček spring 0,6 s bounce 0,18 | Karta vyletí o šířku okna do strany s náklonem ±10° (nahoru o 320 px a scale 0,92) a mizí až od 350 ms; posun, náklon a měřítko jsou předem svázané motion values, jinak se při exitu nevykreslí; projekce 0,998 volí návrat nebo směr odhození, další karta nastoupí hned | Další karta nečeká na výstup |
 | Odznak a statistiky | Lead + Support | Při dokončení ukazatelem | 600 ms | Dokreslení tahu a načtení čísel | Kresba a čísla souběžně |
 
-Dvě další karty tvoří viditelný balíček a obě strany horní karty sdílejí stejnou výšku. Při hodnocení ukazatelem karta odchází doleva (1), nahoru (2 nebo přeskočení) nebo doprava (3). Klávesy 1–3 mění kartu přímo.
+Dvě další karty tvoří viditelný balíček a obě strany horní karty sdílejí stejnou výšku. Při hodnocení karta odchází doleva (1), nahoru (2 nebo přeskočení) nebo doprava (3), myší i klávesami 1–3.
 
 ### Inspektor · Lead → Support
 

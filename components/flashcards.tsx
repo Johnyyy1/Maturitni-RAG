@@ -1,7 +1,7 @@
 "use client";
 
 import { ChevronLeft, Landmark, Layers2, Lightbulb, RotateCcw, Shuffle, SkipForward } from "lucide-react";
-import { animate as animateValue, AnimatePresence, motion, useDragControls, useIsPresent, useMotionValue, useReducedMotion } from "motion/react";
+import { animate as animateValue, AnimatePresence, motion, useDragControls, useIsPresent, useMotionValue, useReducedMotion, useTransform } from "motion/react";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { DoneCard } from "@/components/done-card";
 import { ActionBar, capsule, FocusBar } from "@/components/focus";
@@ -14,10 +14,13 @@ import type { Flashcard, Rating } from "@/lib/types";
 
 const dots = { error: "bg-error", warning: "bg-warning", success: "bg-success" } as const;
 const rateTone = { error: "active:bg-error-soft", warning: "active:bg-warning-soft", success: "active:bg-success-soft" } as const;
-const face = "col-start-1 row-start-1 flex flex-col px-6 pt-8 pb-7 lg:px-10 lg:pt-9 lg:pb-8";
+const face = "flashcard-face surface col-start-1 row-start-1 flex flex-col rounded-[32px] px-6 pt-8 pb-7 [backface-visibility:hidden] lg:px-10 lg:pt-9 lg:pb-8";
 type Departure = { direction: "left" | "right" | "up"; gesture: boolean } | null;
+// Long enough to follow the card off screen; the deck catches up with a soft spring.
+const fly = { duration: 0.6, ease: ease.inOut } as const;
+const deckSpring = { type: "spring", bounce: 0.18, duration: 0.6 } as const;
 
-/** Frames 32 (front), 24 (answer) and 33 (done). Space flips, 1–3 rates. */
+/** Frames 32 (front), 24 (answer) and 33 (done). Space flips in 3D, 1–3 rates and sends the card left / up / right. */
 export function Flashcards({ title, cards, ratings }: { title: string; cards: Flashcard[]; ratings: Rating[] }) {
   const reduce = useReducedMotion();
   const [order, setOrder] = useState(() => cards.map((_, i) => i));
@@ -56,10 +59,10 @@ export function Flashcards({ title, cards, ratings }: { title: string; cards: Fl
       if (e.key === " " && !revealed) {
         if ((e.target as HTMLElement).closest("button,a")) return;
         e.preventDefault();
-        flip(false);
+        flip(true);
       } else if (revealed && ["1", "2", "3"].includes(e.key)) {
         e.preventDefault();
-        rate(Number(e.key) as Rating["key"]);
+        rate(Number(e.key) as Rating["key"], true);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -137,17 +140,17 @@ export function Flashcards({ title, cards, ratings }: { title: string; cards: Fl
                     aria-hidden
                     initial={false}
                     animate={{ y: 14 * (depth + 1), scale: 1 - 0.05 * (depth + 1) }}
-                    transition={departure && !reduce ? spring : { duration: 0 }}
+                    transition={departure && !reduce ? deckSpring : { duration: 0 }}
                     style={{ zIndex: 2 - depth }}
                     className="flashcard-face surface pointer-events-none absolute inset-0 origin-bottom rounded-[32px]"
                   />
                 ))}
                 <AnimatePresence initial={false} custom={departure}>
                   <FlashcardSurface key={pos} revealed={revealed} onSwipe={(direction) => rate(direction > 0 ? 3 : 1, true, true)}>
-                    <div aria-hidden={revealed || undefined} inert={revealed} className={cn(face, revealed ? "invisible" : effect === "fade" && "fade-in")}>
+                    <div aria-hidden={revealed || undefined} inert={revealed} className={cn(face, reduce ? revealed && "invisible" : "", !revealed && effect === "fade" && "fade-in")}>
                       <Front card={card} />
                     </div>
-                    <div aria-hidden={!revealed || undefined} inert={!revealed} className={cn(face, revealed ? effect === "reveal" ? "card-reveal" : "fade-in" : "invisible")}>
+                    <div aria-hidden={!revealed || undefined} inert={!revealed} className={cn(face, reduce ? revealed ? "fade-in" : "invisible" : "[transform:rotateY(180deg)]")}>
                       <Back card={card} />
                     </div>
                   </FlashcardSurface>
@@ -203,6 +206,12 @@ export function Flashcards({ title, cards, ratings }: { title: string; cards: Fl
 function FlashcardSurface({ revealed, onSwipe, children }: { revealed: boolean; onSwipe: (direction: number) => void; children: ReactNode }) {
   const drag = useDragControls();
   const x = useMotionValue(0);
+  // Bound up front: transforms first created by the exit variant never render.
+  const y = useMotionValue(0);
+  const scale = useMotionValue(1);
+  const rotateZ = useMotionValue(0);
+  // Tilt with the finger, like a card held at the bottom.
+  const rotate = useTransform(x, [-200, 0, 200], [-8, 0, 8]);
   const reduce = useReducedMotion();
   const present = useIsPresent();
 
@@ -217,13 +226,21 @@ function FlashcardSurface({ revealed, onSwipe, children }: { revealed: boolean; 
       dragMomentum={false}
       dragConstraints={{ left: -76, right: 76 }}
       dragElastic={0.24}
-      style={{ x }}
+      style={{ x, y, rotate, rotateZ, scale }}
       exit="out"
       variants={{ out: (exit: Departure) => ({
-        x: !reduce && exit ? exit.direction === "left" ? -240 : exit.direction === "right" ? 240 : 0 : 0,
-        y: !reduce && exit?.direction === "up" ? -24 : 0,
+        // Pixels, not %: x is a px motion value shared with the drag, and units can't be mixed.
+        x: !reduce && exit ? exit.direction === "left" ? -window.innerWidth : exit.direction === "right" ? window.innerWidth : 0 : 0,
+        y: !reduce && exit?.direction === "up" ? -320 : 0,
+        // rotateZ, because rotate is derived from x for the drag tilt.
+        rotateZ: !reduce && exit ? exit.direction === "left" ? -10 : exit.direction === "right" ? 10 : 0 : 0,
+        scale: !reduce && exit?.direction === "up" ? 0.92 : 1,
         opacity: 0,
-        transition: exit?.gesture ? { ...springMomentum, opacity: { duration: dur.exit, ease: ease.out } } : { duration: exit ? dur.exit : 0, ease: ease.out },
+        transition: !exit
+          ? { duration: 0 }
+          : reduce
+            ? { duration: dur.panel, ease: ease.out }
+            : { ...(exit.gesture ? { ...springMomentum, duration: 0.6 } : fly), opacity: { duration: 0.25, delay: 0.35, ease: "linear" } },
       }) }}
       onPointerDown={(e) => {
         if (revealed && !reduce && e.pointerType === "touch" && !(e.target as HTMLElement).closest("a, button")) {
@@ -237,11 +254,18 @@ function FlashcardSurface({ revealed, onSwipe, children }: { revealed: boolean; 
         } else animateValue(x, 0, Math.abs(info.velocity.x) > 100 ? springMomentum : spring);
       }}
       className={cn(
-        "flashcard-face surface grid min-h-[420px] w-full touch-pan-y rounded-[32px]",
+        "grid min-h-[420px] w-full origin-bottom touch-pan-y [perspective:1600px]",
         present ? "relative z-[3]" : "pointer-events-none absolute inset-0 z-10",
       )}
     >
-      {children}
+      <motion.div
+        initial={false}
+        animate={{ rotateY: revealed && !reduce ? 180 : 0, scale: revealed && !reduce ? [1, 1.04, 1] : 1 }}
+        transition={{ duration: 0.65, ease: ease.inOut }}
+        className="grid [transform-style:preserve-3d]"
+      >
+        {children}
+      </motion.div>
     </motion.article>
   );
 }

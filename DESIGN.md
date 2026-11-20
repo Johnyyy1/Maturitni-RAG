@@ -71,7 +71,7 @@ a návrat focusu z dialogů. Malé ovládací prvky mají rozšířenou dotykovo
 - U kartiček mezerník otáčí a 1–3 hodnotí.
 
 Pohyb podporuje změnu stavu: `.press` používá 120 ms a stisk na 0,96;
-kartička otočená kliknutím prolne obsah za 180 ms. Klávesové akce se neanimují.
+kartička se otočí ve 3D za 650 ms (kliknutím i mezerníkem) a po hodnocení odjede doleva (1), nahoru (2) nebo doprava (3). Ostatní klávesové akce se neanimují.
 Inspektor a dialogy používají krátké zjevení, sheet pružinu bez odrazu.
 Respektuj `prefers-reduced-motion`, `prefers-reduced-transparency` a
 `prefers-contrast`; existující CSS nabízí neprůhledné alternativy materiálů.
