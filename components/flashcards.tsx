@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, Landmark, Layers2, Lightbulb, RotateCcw, Shuffle, SkipForward } from "lucide-react";
+import { ChevronLeft, Landmark, Layers2, Lightbulb, RotateCcw, RotateCw, Shuffle, SkipForward } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { useCallback, useEffect, useState } from "react";
 import { DoneCard } from "@/components/done-card";
@@ -12,34 +12,45 @@ import { cn } from "@/lib/cn";
 import type { Flashcard, Rating } from "@/lib/types";
 
 const dots = { error: "bg-error", warning: "bg-warning", success: "bg-success" } as const;
+/** Pressed rating flashes its own tone before the card leaves. */
+const rateTone = { error: "active:bg-error-soft", warning: "active:bg-warning-soft", success: "active:bg-success-soft" } as const;
+
+const EASE_OUT = [0.23, 1, 0.32, 1] as const;
+/** Cards visible under the top one. */
+const DEPTH = 2;
+
+type Exit = "left" | "right" | "aside";
 
 /** Frames 32 (front), 24 (answer) and 33 (done). Space flips, 1–3 rates. */
 export function Flashcards({ title, cards, ratings }: { title: string; cards: Flashcard[]; ratings: Rating[] }) {
-  const reduce = useReducedMotion();
+  const reduce = useReducedMotion() ?? false;
   const [order, setOrder] = useState(() => cards.map((_, i) => i));
   const [pos, setPos] = useState(0);
   const [revealed, setRevealed] = useState(false);
-  // Animate the reveal only when it came from a pointer; keyboard actions stay instant.
+  // Clicks and Space animate; rating with 1–3 stays instant.
   const [animate, setAnimate] = useState(false);
+  // Where the top card leaves to: the rating decides the direction.
+  const [exit, setExit] = useState<Exit>("aside");
   const [rated, setRated] = useState<Rating["key"][]>([]);
   const done = pos >= order.length;
-  const card = cards[order[Math.min(pos, order.length - 1)]];
+  const motionOn = animate && !reduce;
 
   const flip = useCallback((fromPointer: boolean) => {
     setAnimate(fromPointer);
     setRevealed(true);
   }, []);
 
-  const advance = useCallback(() => {
+  const advance = useCallback((to: Exit, fromPointer: boolean) => {
+    setAnimate(fromPointer);
+    setExit(to);
     setRevealed(false);
-    setAnimate(false);
     setPos((p) => p + 1);
   }, []);
 
   const rate = useCallback(
-    (key: Rating["key"]) => {
+    (key: Rating["key"], fromPointer: boolean) => {
       setRated((r) => [...r, key]);
-      advance();
+      advance(key === 1 ? "left" : key === 3 ? "right" : "aside", fromPointer);
     },
     [advance],
   );
@@ -50,10 +61,11 @@ export function Flashcards({ title, cards, ratings }: { title: string; cards: Fl
       if (e.key === " " && !revealed) {
         if ((e.target as HTMLElement).closest("button,a")) return;
         e.preventDefault();
-        flip(false);
+        // A flashcard turning over is the point of the screen, so Space animates like a click.
+        flip(true);
       } else if (revealed && ["1", "2", "3"].includes(e.key)) {
         e.preventDefault();
-        rate(Number(e.key) as Rating["key"]);
+        rate(Number(e.key) as Rating["key"], false);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -65,6 +77,7 @@ export function Flashcards({ title, cards, ratings }: { title: string; cards: Fl
     setPos(0);
     setRated([]);
     setRevealed(false);
+    setAnimate(false);
   };
 
   const known = rated.filter((r) => r === 3).length;
@@ -122,60 +135,74 @@ export function Flashcards({ title, cards, ratings }: { title: string; cards: Fl
           />
         ) : (
           <>
-            {/* The card stays put; only its content cross-fades. */}
-            <article aria-live="polite" className="surface relative grid min-h-[420px] w-full max-w-[640px] rounded-[32px]">
-              <AnimatePresence mode="popLayout" initial={false}>
-                <motion.div
-                  key={`${pos}-${revealed}`}
-                  initial={animate && !reduce ? { opacity: 0, filter: "blur(2px)" } : false}
-                  animate={{ opacity: 1, filter: "blur(0px)" }}
-                  exit={animate && !reduce ? { opacity: 0, filter: "blur(2px)" } : { opacity: 0, transition: { duration: 0 } }}
-                  transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
-                  className="col-start-1 row-start-1 flex flex-col px-6 pt-8 pb-7 lg:px-10 lg:pt-9 lg:pb-8"
-                >
-                  {revealed ? <Back card={card} /> : <Front card={card} />}
-                </motion.div>
-              </AnimatePresence>
-            </article>
+            <CardStack order={order} pos={pos} cards={cards} revealed={revealed} exit={exit} motionOn={motionOn} reduce={reduce} />
 
-            {revealed ? (
-              <div role="group" aria-label="Jak ti to šlo?" className="glass sticky bottom-6 z-20 flex h-[76px] w-full max-w-[640px] gap-1 rounded-full p-1.5">
-                {ratings.map((r) => (
-                  <button
-                    key={r.key}
-                    type="button"
-                    onClick={() => rate(r.key)}
-                    aria-keyshortcuts={String(r.key)}
-                    className="press flex h-16 flex-1 items-center gap-3 rounded-full px-3 text-left hover:bg-panel hover:shadow-[0_2px_8px_var(--glass-shadow)] focus-visible:bg-panel sm:px-[18px]"
-                  >
-                    <span className="hidden sm:contents">
-                      <Kbd className="size-[26px] rounded-lg text-[12px]">{r.key}</Kbd>
-                    </span>
-                    <span className="flex flex-col gap-0.5">
-                      <span className="flex items-center gap-1.5 text-[14px] font-semibold">
-                        <span aria-hidden className={cn("size-[7px] rounded-full", dots[r.tone])} />
-                        {r.label}
+            <AnimatePresence mode="popLayout" initial={false}>
+              {revealed ? (
+                <motion.div
+                  key="rate"
+                  role="group"
+                  aria-label="Jak ti to šlo?"
+                  initial={motionOn ? { opacity: 0, transform: "translateY(10px) scale(0.98)" } : false}
+                  animate={{ opacity: 1, transform: "translateY(0px) scale(1)" }}
+                  exit={{ opacity: 0, transition: { duration: 0 } }}
+                  transition={{ duration: 0.22, ease: EASE_OUT }}
+                  className="glass sticky bottom-6 z-20 flex h-[76px] w-full max-w-[640px] gap-1 rounded-full p-1.5"
+                >
+                  {ratings.map((r, i) => (
+                    <motion.button
+                      key={r.key}
+                      type="button"
+                      onClick={() => rate(r.key, true)}
+                      aria-keyshortcuts={String(r.key)}
+                      initial={motionOn ? { opacity: 0, transform: "translateY(6px)" } : false}
+                      animate={{ opacity: 1, transform: "translateY(0px)" }}
+                      transition={{ duration: 0.2, ease: EASE_OUT, delay: motionOn ? 0.06 + i * 0.04 : 0 }}
+                      className={cn("rate group flex h-16 flex-1 items-center gap-3 rounded-full px-3 text-left sm:px-[18px]", rateTone[r.tone])}
+                    >
+                      <span className="hidden sm:contents">
+                        <Kbd className="rate-key size-[26px] rounded-lg text-[12px]">{r.key}</Kbd>
                       </span>
-                      <span className="text-[12px] text-muted">{r.interval}</span>
+                      <span className="flex flex-col gap-0.5">
+                        <span className="flex items-center gap-1.5 text-[14px] font-semibold">
+                          <span aria-hidden className={cn("rate-dot size-[7px] rounded-full", dots[r.tone])} />
+                          {r.label}
+                        </span>
+                        <span className="text-[12px] text-muted">{r.interval}</span>
+                      </span>
+                    </motion.button>
+                  ))}
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="flip"
+                  initial={motionOn ? { opacity: 0, transform: "translateY(10px) scale(0.98)" } : false}
+                  animate={{ opacity: 1, transform: "translateY(0px) scale(1)" }}
+                  exit={{ opacity: 0, transition: { duration: 0 } }}
+                  transition={{ duration: 0.22, ease: EASE_OUT }}
+                  className="sticky bottom-[max(20px,env(safe-area-inset-bottom))] z-20 flex w-full justify-center lg:bottom-6"
+                >
+                  <ActionBar label="Kartička" className="static lg:pl-3.5">
+                    <button
+                      type="button"
+                      onClick={() => advance("aside", true)}
+                      className="press flex h-11 items-center gap-1.5 rounded-full px-3.5 text-[14px] font-medium text-muted transition-[color,background-color,transform] hover:bg-ring hover:text-fg"
+                    >
+                      <SkipForward size={15} strokeWidth={1.5} aria-hidden />
+                      Přeskočit
+                    </button>
+                    <div className="flex-1" />
+                    <span className="hidden sm:contents">
+                      <Kbd className="px-2">mezerník</Kbd>
                     </span>
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <ActionBar label="Kartička" className="lg:pl-3.5">
-                <button type="button" onClick={advance} className="press flex h-11 items-center gap-1.5 rounded-full px-3.5 text-[14px] font-medium text-muted hover:text-fg">
-                  <SkipForward size={15} strokeWidth={1.5} aria-hidden />
-                  Přeskočit
-                </button>
-                <div className="flex-1" />
-                <span className="hidden sm:contents">
-                  <Kbd className="px-2">mezerník</Kbd>
-                </span>
-                <PrimaryPill onClick={() => flip(true)} size={44} aria-keyshortcuts="Space">
-                  Otočit kartičku
-                </PrimaryPill>
-              </ActionBar>
-            )}
+                    <PrimaryPill onClick={() => flip(true)} size={44} aria-keyshortcuts="Space" className="group lift">
+                      <RotateCw size={15} strokeWidth={2} aria-hidden className="flip-icon" />
+                      Otočit kartičku
+                    </PrimaryPill>
+                  </ActionBar>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </>
         )}
       </div>
@@ -212,5 +239,107 @@ function Back({ card }: { card: Flashcard }) {
       <p className="mt-5 text-[16px] leading-[1.55] text-muted">{card.detail}</p>
       <CitationChip n={1} label={card.citation} href="/predmety/dejepis/otazky/7/studium#zdroj-1" className="mt-7" />
     </>
+  );
+}
+
+type StackProps = {
+  order: number[];
+  pos: number;
+  cards: Flashcard[];
+  revealed: boolean;
+  exit: Exit;
+  motionOn: boolean;
+  reduce: boolean;
+};
+
+/** Pose of a card `depth` places under the top one. Same transform template everywhere so motion can interpolate it. */
+function pose(depth: number) {
+  const d = Math.min(depth, DEPTH + 1);
+  return {
+    transform: `translateX(0%) translateY(${d * 14}px) rotate(0deg) scale(${1 - d * 0.05})`,
+    opacity: d > DEPTH ? 0 : 1,
+  };
+}
+
+const exits: Record<Exit, { transform: string; opacity: number }> = {
+  left: { transform: "translateX(-115%) translateY(20px) rotate(-8deg) scale(1)", opacity: 0 },
+  right: { transform: "translateX(115%) translateY(20px) rotate(8deg) scale(1)", opacity: 0 },
+  aside: { transform: "translateX(0%) translateY(-40px) rotate(0deg) scale(0.92)", opacity: 0 },
+};
+
+/** The deck: top card flips in 3D, the next ones peek out underneath and move up when it leaves. */
+function CardStack({ order, pos, cards, revealed, exit, motionOn, reduce }: StackProps) {
+  const visible = order.slice(pos, pos + DEPTH + 1);
+  return (
+    // Clip sideways so a card flying off never adds a horizontal scrollbar.
+    <div className="w-full [overflow-x:clip] pb-[28px]">
+      <div className="relative mx-auto grid w-full max-w-[640px] [perspective:1600px]">
+        <AnimatePresence initial={false} custom={{ exit, motionOn }}>
+          {visible.map((cardIndex, depth) => {
+            const top = depth === 0;
+            return (
+              <motion.div
+                key={cardIndex}
+                custom={{ exit, motionOn }}
+                variants={{
+                  hidden: pose(DEPTH + 1),
+                  shown: pose(depth),
+                  gone: (c: { exit: Exit; motionOn: boolean }) => ({
+                    ...exits[c.exit],
+                    // The leaving card stays above the one taking its place.
+                    zIndex: 20,
+                    transition: c.motionOn ? { duration: 0.38, ease: EASE_OUT } : { duration: 0 },
+                  }),
+                }}
+                initial="hidden"
+                animate="shown"
+                exit="gone"
+                transition={motionOn ? { duration: 0.42, ease: EASE_OUT } : { duration: 0 }}
+                style={{ zIndex: 10 - depth, transformOrigin: "50% 100%" }}
+                aria-hidden={!top || undefined}
+                inert={!top || undefined}
+                className="col-start-1 row-start-1 grid"
+              >
+                <FlipCard card={cards[cardIndex]} revealed={top && revealed} motionOn={motionOn} reduce={reduce} top={top} />
+              </motion.div>
+            );
+          })}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+// --surface is 95% opaque; the solid page colour underneath keeps the cards below from showing through.
+const face = "surface [background:linear-gradient(var(--surface),var(--surface)),var(--bg-d)]! col-start-1 row-start-1 flex min-h-[420px] flex-col rounded-[32px] px-6 pt-8 pb-7 [backface-visibility:hidden] lg:px-10 lg:pt-9 lg:pb-8";
+
+/**
+ * Both faces share one grid cell, so the card keeps the height of the taller face and never jumps when it turns.
+ * Reduced motion swaps the faces with a short cross-fade instead of rotating.
+ */
+function FlipCard({ card, revealed, motionOn, reduce, top }: { card: Flashcard; revealed: boolean; motionOn: boolean; reduce: boolean; top: boolean }) {
+  return (
+    <article
+      aria-live={top ? "polite" : undefined}
+      style={{ transform: `rotateY(${revealed && !reduce ? 180 : 0}deg)` }}
+      className={cn("grid [transform-style:preserve-3d]", motionOn && "flip-turn")}
+    >
+      <div
+        aria-hidden={revealed || undefined}
+        inert={revealed || undefined}
+        className={cn(face, reduce && "transition-opacity duration-200", reduce && revealed && "opacity-0")}
+      >
+        <Front card={card} />
+      </div>
+      {top && (
+        <div
+          aria-hidden={!revealed || undefined}
+          inert={!revealed || undefined}
+          className={cn(face, !reduce && "[transform:rotateY(180deg)]", reduce && "transition-opacity duration-200", reduce && !revealed && "opacity-0")}
+        >
+          <Back card={card} />
+        </div>
+      )}
+    </article>
   );
 }

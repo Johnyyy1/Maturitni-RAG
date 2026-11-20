@@ -51,7 +51,8 @@ Funkční navíc:
 
 ## Pohyb
 
-- **Akce z klávesnice se neanimují:** ⌘K otevřené klávesou, otočení kartičky mezerníkem, výběr odpovědi A–D. Otočení kliknutím prolne obsah za 180 ms (blur 2 → 0 px), karta se nehýbe.
+- **Akce z klávesnice se neanimují:** ⌘K otevřené klávesou, výběr odpovědi A–D, hodnocení kartičky klávesami 1–3. Výjimkou je otočení kartičky: kliknutí i mezerník otočí kartu ve 3D (rotateY 180°, 520 ms, CSS přechod); obě strany sdílí jednu buňku mřížky, takže karta nemění výšku.
+- **Kartičky jsou balíček:** pod horní kartou vykukují další dvě (posun 14 px, scale −5 % na úroveň). Ohodnocená karta odletí podle hodnocení (Ještě neumím doleva, Umím doprava, Částečně a Přeskočit nahoru) a balíček se posune nahoru. Hodnocení z klávesnice je okamžité. Tlačítka hodnocení se při hoveru nadzvednou, při stisku se zmenší a bliknou barvou hodnocení. Reduced motion: strany se jen prolnou, bez rotace a posunu.
 - **Inspektor, bottom sheet a ⌘K** se materializují (opacity, scale 0,98 → 1, blur), sheet vyjíždí springem bez odrazu.
 
 ## Next.js 16
