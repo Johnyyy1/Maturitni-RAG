@@ -109,7 +109,7 @@ export function Flashcards({ title, cards, ratings }: { title: string; cards: Fl
         }
       />
 
-      <div className="flex w-full flex-1 flex-col items-center justify-center gap-6 py-6">
+      <div className={cn("flex w-full flex-1 flex-col items-center gap-6 py-6", done ? "justify-center" : "lg:justify-center")}>
         {done ? (
           <DoneCard celebrate={effect !== "none"}
             title="Na dnešek máš hotovo"
@@ -159,7 +159,7 @@ export function Flashcards({ title, cards, ratings }: { title: string; cards: Fl
             </div>
 
             {revealed ? (
-              <div role="group" aria-label="Jak ti to šlo?" className="glass sticky bottom-6 z-20 flex h-[76px] w-full max-w-[640px] gap-1 rounded-full p-1.5">
+              <div role="group" aria-label="Jak ti to šlo?" className="glass sticky bottom-chrome z-20 mt-auto flex h-[76px] lg:bottom-6 lg:mt-0 w-full max-w-[640px] gap-1 rounded-full p-1.5">
                 {ratings.map((r) => (
                   <button
                     key={r.key}
@@ -182,7 +182,7 @@ export function Flashcards({ title, cards, ratings }: { title: string; cards: Fl
                 ))}
               </div>
             ) : (
-              <ActionBar label="Kartička" className="lg:pl-3.5">
+              <ActionBar label="Kartička" className="mt-auto lg:mt-0 lg:pl-3.5">
                 <button type="button" onClick={(e) => advance(e.detail > 0)} className="press flex h-11 items-center gap-1.5 rounded-full px-3.5 text-[14px] font-medium text-muted hover:text-fg">
                   <SkipForward size={15} strokeWidth={1.5} aria-hidden />
                   Přeskočit

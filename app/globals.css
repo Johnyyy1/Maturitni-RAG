@@ -75,6 +75,14 @@
   html {
     color-scheme: light;
     -webkit-text-size-adjust: 100%;
+    /* The sheet's scroll lock hides the scrollbar; a reserved gutter keeps the page from shifting. */
+    scrollbar-gutter: stable;
+    /* Phone chrome (needs viewport-fit=cover): safe areas, the floating bottom offset and the tab bar. */
+    --safe-t: env(safe-area-inset-top, 0px);
+    --safe-b: env(safe-area-inset-bottom, 0px);
+    --chrome-b: max(20px, var(--safe-b));
+    --tabbar-space: calc(62px + var(--chrome-b) + 16px);
+    --kb: 0px; /* on-screen keyboard height, set by the tutor composer on iOS */
   }
   html.dark {
     color-scheme: dark;
@@ -298,6 +306,14 @@
   }
 }
 
+/* Floating chrome offsets that respect the notch and the home indicator. */
+@utility top-chrome {
+  top: calc(12px + var(--safe-t));
+}
+@utility bottom-chrome {
+  bottom: var(--chrome-b);
+}
+
 /* Solid content surface. A utility so it can take variants (lg:surface). */
 @utility surface {
   background: var(--surface);
@@ -506,6 +522,14 @@ html:not([data-seen-today]) .today-bar {
   from {
     transform: translateX(-25%);
   }
+}
+/* Question mode header (Studovat / Mapa) stays put between its tabs; the live lens slides instead. */
+::view-transition-group(mode-header),
+::view-transition-new(mode-header) {
+  animation: none;
+}
+::view-transition-old(mode-header):not(:only-child) {
+  display: none;
 }
 ::view-transition-group(.nav-back) {
   animation: none;

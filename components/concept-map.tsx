@@ -1,12 +1,11 @@
 "use client";
 
-import { ArrowRight, ChevronLeft, Eye, List, Maximize2, Minus, Network, Plus, X, Zap } from "lucide-react";
+import { ArrowRight, Eye, List, Maximize2, Minus, Network, Plus, X, Zap } from "lucide-react";
 import { animate, AnimatePresence, motion, useDragControls, useMotionValue, useReducedMotion } from "motion/react";
 import Link from "next/link";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { CitationChip, Chip } from "@/components/ui/bits";
 import { GlassButton, GlassIconButton, PrimaryPill } from "@/components/ui/buttons";
-import { Segmented } from "@/components/ui/segmented";
 import { Sheet } from "@/components/ui/sheet";
 import { questionHref } from "@/lib/mock/questions";
 import { inspector, spring } from "@/lib/motion";
@@ -76,20 +75,8 @@ export function ConceptMap({ question, nodes, edges }: { question: Question; nod
   return (
     <div className="flex gap-3 lg:h-dvh lg:py-2.5 lg:pr-2.5 lg:pl-3">
       {/* Mobile: accessible list of relations (no canvas) */}
-      <div className="flex flex-1 flex-col px-4 pt-3 lg:hidden">
-        <div className="sticky top-3 z-20 flex h-11 items-center gap-2">
-          <GlassIconButton href={questionHref(question)} icon={ChevronLeft} label="Zpět na otázku" size={44} />
-          <div className="flex-1" />
-          <Segmented
-            label="Režim otázky"
-            value="mapa"
-            items={[
-              { label: "Studovat", value: "studium", href: studyHref },
-              { label: "Mapa", value: "mapa", href: questionHref(question, "mapa") },
-              { label: "Vyzkoušet se", value: "zkouska", href: questionHref(question, "zkouska") },
-            ]}
-          />
-        </div>
+      {/* Back and the mode control come from the shared header in layout `(rezim)`. */}
+      <div className="flex flex-1 flex-col px-4 lg:hidden">
         <h1 className="mt-6 text-[30px] leading-[1.1] font-bold tracking-[-0.8px]">Mapa pojmů</h1>
         <p className="mt-1.5 text-[16px] text-muted">{question.title}</p>
         <div className="surface mt-[18px] rounded-[22px] p-2">

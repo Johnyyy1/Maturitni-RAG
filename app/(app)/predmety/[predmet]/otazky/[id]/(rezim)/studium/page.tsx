@@ -29,8 +29,11 @@ async function StudyPageContent({ params }: PageProps<"/predmety/[predmet]/otazk
 
   if (!question.detail?.sources.length) {
     return (
-      <div className="mx-auto flex max-w-[620px] flex-col gap-6 px-4 pt-3 lg:pt-[22px]">
-        <GlassIconButton href={questionHref(question)} icon={ChevronLeft} label="Zpět na otázku" />
+      <div className="mx-auto flex max-w-[620px] flex-col gap-6 px-4 pt-6 lg:pt-[22px]">
+        {/* Mobile: back lives in the shared header of layout `(rezim)`. */}
+        <span className="hidden lg:contents">
+          <GlassIconButton href={questionHref(question)} icon={ChevronLeft} label="Zpět na otázku" />
+        </span>
         <h1 className="text-[32px] leading-[1.1] font-semibold tracking-[-0.9px]">{question.title}</h1>
         <StateCard
           role="status"

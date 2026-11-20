@@ -115,7 +115,7 @@ export function QuizView({ quiz }: { quiz: Quiz }) {
         }
       />
 
-      <div className="flex w-full flex-1 flex-col items-center justify-center gap-7 py-6">
+      <div className={cn("flex w-full flex-1 flex-col items-center gap-7 py-6", done ? "justify-center" : "lg:justify-center")}>
         {done ? (
           <DoneCard
             title="Kvíz máš hotový"
@@ -189,7 +189,7 @@ export function QuizView({ quiz }: { quiz: Quiz }) {
               </AnimatePresence>
             </div>
 
-            <ActionBar label="Odpověď">
+            <ActionBar label="Odpověď" className="mt-auto lg:mt-0">
               {checked ? (
                 <span className="pl-3 text-[14px] font-medium text-muted lg:pl-0">Vyhodnoceno podle klíče</span>
               ) : (

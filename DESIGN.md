@@ -57,7 +57,10 @@ spojuj s následujícím slovem nedělitelnou mezerou; kontroluje je
 
 Od 1024 px se používá sidebar, pod touto šířkou mobilní navigace.
 V rozsahu 768–1023 px se obsah skládá do jednoho nebo dvou sloupců.
-Fokusové obrazovky centrují pracovní kartu; akční lišta zůstává sticky dole.
+Fokusové obrazovky centrují pracovní kartu na desktopu; na mobilu je karta ukotvená pod hlavičkou,
+aby vyhodnocení nebo otočení kartu neposunulo. Akční lišta zůstává sticky dole.
+Spodní navigace patří jen kořenovým obrazovkám (Dnes, Předměty); vnořené a soustředěné obrazovky ji nemají.
+Horní i spodní plovoucí lišty respektují safe area (`top-chrome`, `bottom-chrome`), výšky používají `dvh`.
 Inspektor zdrojů se na mobilu mění na bottom sheet, mapa pojmů na seznam vazeb.
 Systémový stavový řádek telefonu ani domovský indikátor se nekreslí do stránky.
 

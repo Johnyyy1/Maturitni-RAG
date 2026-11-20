@@ -80,7 +80,7 @@ async function QuestionPageContent({ params }: PageProps<"/predmety/[predmet]/ot
 
       {/* Mobile · frame 36 */}
       <div className="flex flex-col px-4 pt-3 lg:hidden">
-        <div className="sticky top-3 z-20 flex h-11 items-center gap-2">
+        <div className="sticky top-chrome z-20 flex h-11 items-center gap-2">
           <GlassIconButton href="/" icon={ChevronLeft} label="Zpět" size={44} />
           <div className="flex-1" />
           <div className="glass-thin flex h-11 items-center rounded-full px-1 [--g-y:6px] [--g-b:20px]">

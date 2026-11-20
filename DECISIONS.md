@@ -19,7 +19,10 @@ Zdroj pravdy je `design/MaturitaRAG.pen`, framy 20–39 („· Glass“) a jejic
 
 - **iOS stavový řádek (9:41) a domovský indikátor** z mobilních framů nevykresluju, jsou součástí systému.
 - **Breakpointy:** pod 1024 px je mobilní chrome (plovoucí tab bar, layout podle framů 25 a 36–38), od 1024 px sidebar. Mezi 768 a 1023 px se desktopový obsah skládá do jednoho nebo dvou sloupců.
-- **Fokusové obrazovky** centrují kartu a akční lištu do prostoru pod horní lištou. To odpovídá framům 23, 30, 31 a 32 (střed je v obou případech na y = 492). Frame 33 má kartu asi o 20 px výš, zůstává centrovaná stejně jako ostatní.
+- **Fokusové obrazovky** centrují kartu a akční lištu do prostoru pod horní lištou. To odpovídá framům 23, 30, 31 a 32 (střed je v obou případech na y = 492). Frame 33 má kartu asi o 20 px výš, zůstává centrovaná stejně jako ostatní. Na mobilu (pod 1024 px) je karta kvízu a kartiček ukotvená shora a akční lišta dole: přidané „Proč“ nebo odpověď by jinak celou kartu posunuly nahoru. Karta „Hotovo“ zůstává centrovaná.
+- **Spodní navigace na mobilu** je jen na kořenových obrazovkách (`/`, `/balicky`). Detail otázky, Studovat, Mapa, Rozbor i fokusové toky ji nemají; zpět vede tlačítko v horní liště.
+- **Studovat a Mapa sdílí hlavičku** z layoutu `(rezim)`: na mobilu zpět vlevo a přepínač režimu vycentrovaný ve zbytku šířky. Hlavička se mezi záložkami nepřemountuje. Zkouška zůstává fokusový tok s vlastní lištou (bez sidebaru), proto do layoutu nepatří.
+- **Safe area a klávesnice.** Viewport má `viewport-fit=cover` a `interactive-widget=resizes-content`. iOS Safari druhou volbu ignoruje, proto composer tutora sleduje `visualViewport` a drží se nad klávesnicí. Akční lišta zkoušky na iOS zůstává pod klávesnicí.
 - **Akční lišta** je `sticky` dole. Když se obsah nevejde, drží se 24 px od spodního okraje.
 - **Sbalený sidebar** nechá vlevo nahoře skleněné tlačítko „Zobrazit panel“.
 - **Okraj posunu** pod horní lištou se objeví až po scrollu (gradient do `bg-d`). V klidu by změnil barvu pozadí nahoře.

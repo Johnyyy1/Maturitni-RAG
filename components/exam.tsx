@@ -147,7 +147,7 @@ function TextTask({ question }: { question: Question }) {
     <form onSubmit={submit} className="flex w-full flex-1 flex-col items-center gap-6 pb-6 lg:pt-5">
       <section
         aria-labelledby="ukol"
-        className="flex h-[calc(100dvh-210px)] max-h-[600px] min-h-[360px] w-full max-w-[780px] flex-col lg:surface lg:h-[min(648px,calc(100dvh-252px))] lg:max-h-none lg:rounded-[30px] lg:px-11 lg:pt-10 lg:pb-7"
+        className="flex h-[calc(100dvh-190px-var(--safe-t)-var(--chrome-b))] max-h-[600px] min-h-[360px] w-full max-w-[780px] flex-col lg:surface lg:h-[min(648px,calc(100dvh-252px))] lg:max-h-none lg:rounded-[30px] lg:px-11 lg:pt-10 lg:pb-7"
       >
         <p className="text-[13px] font-semibold text-accent lg:hidden">{exam.label}</p>
         <h1 id="ukol" className="mt-2 text-[28px] leading-[1.1] font-bold tracking-[-0.7px] lg:mt-0 lg:text-[32px] lg:font-semibold lg:tracking-[-0.9px]">

@@ -50,7 +50,7 @@ async function ReviewContent({ params }: Props) {
     </div>
   );
   const mobileBar = (
-    <div className="sticky top-3 z-20 flex h-11 items-center gap-2 lg:hidden">
+    <div className="sticky top-chrome z-20 flex h-11 items-center gap-2 lg:hidden">
       <GlassIconButton href={questionHref(q)} icon={ChevronLeft} label="Zpět na otázku" size={44} />
     </div>
   );

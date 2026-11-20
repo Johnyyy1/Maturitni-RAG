@@ -78,7 +78,7 @@ export function CommandMenu({ open, instant, onClose }: { open: boolean; instant
             exit={{ opacity: 0, transition: { duration: 0 } }}
             transition={{ duration: instant ? 0 : dur.exit, ease: ease.out }}
             style={{ transformOrigin: "50% 0%" }}
-            className="glass-thick mx-auto mt-[12vh] w-[min(560px,calc(100%-32px))] overflow-hidden rounded-[22px]"
+            className="glass-thick mx-auto mt-[12dvh] w-[min(560px,calc(100%-32px))] overflow-hidden rounded-[22px]"
           >
             <div className="flex h-14 items-center gap-2.5 border-b border-border px-4">
               <Search size={18} strokeWidth={1.75} className="text-muted" aria-hidden />
@@ -111,7 +111,7 @@ export function CommandMenu({ open, instant, onClose }: { open: boolean; instant
               />
               <Kbd>esc</Kbd>
             </div>
-            <ul id={listId} role="listbox" aria-label="Výsledky" className="max-h-[min(420px,60vh)] overflow-y-auto p-2">
+            <ul id={listId} role="listbox" aria-label="Výsledky" className="max-h-[min(420px,60dvh)] overflow-y-auto p-2">
               {results.length === 0 && <li className="px-3 py-6 text-center text-[14px] text-muted">Nic jsme nenašli</li>}
               {results.map((e, i) => (
                 <li

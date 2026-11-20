@@ -5,7 +5,6 @@ import {
   BookOpen,
   CalendarClock,
   Check,
-  ChevronLeft,
   Copy,
   List,
   ListChecks,
@@ -23,7 +22,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
+import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { Breadcrumb } from "@/components/question";
 import { CitationChip, CitationNumber } from "@/components/ui/bits";
 import { GlassButton, GlassIconButton } from "@/components/ui/buttons";
@@ -64,6 +63,22 @@ export function StudyView({ question }: { question: Question }) {
       setComposerHeight(Math.max(56, height + 24));
     }
   }, [draft]);
+  const thread = useRef<HTMLElement>(null);
+  // iOS Safari ignores interactive-widget: the keyboard only shrinks the visual viewport and covers
+  // fixed elements. --kb is how much of the layout viewport's bottom is hidden; the composer rides on it.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    const el = thread.current;
+    if (!vv || !el) return;
+    const update = () => el.style.setProperty("--kb", `${Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop))}px`);
+    update();
+    vv.addEventListener("resize", update);
+    vv.addEventListener("scroll", update);
+    return () => {
+      vv.removeEventListener("resize", update);
+      vv.removeEventListener("scroll", update);
+    };
+  }, []);
   const busy = messages.some((m) => m.streaming);
   const abort = useRef<AbortController | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
@@ -138,13 +153,13 @@ export function StudyView({ question }: { question: Question }) {
 
   return (
     <div className="flex gap-3 lg:h-dvh lg:py-2.5 lg:pr-2.5 lg:pl-3">
-      <section aria-label="Konverzace s tutorem" className="thread-scope relative flex min-w-0 flex-1 flex-col lg:surface lg:overflow-hidden lg:rounded-[22px]">
-        {/* Floating bar */}
-        <div className="scroll-lift sticky top-0 z-20 flex h-11 items-center gap-2 px-4 pt-3 lg:absolute lg:inset-x-4 lg:top-3.5 lg:h-10 lg:px-0 lg:pt-0">
-          <span className="hidden lg:contents">
-            <Breadcrumb back={questionHref(question)} items={[{ label: question.trail[0] }, { label: `Otázka ${question.id}` }]} />
-          </span>
-          <GlassIconButton href={questionHref(question)} icon={ChevronLeft} label="Zpět na otázku" size={44} className="lg:hidden" />
+      <section
+        ref={thread}
+        style={{ "--composer-h": `${composerHeight}px` } as CSSProperties}
+        aria-label="Konverzace s tutorem" className="thread-scope relative flex min-w-0 flex-1 flex-col lg:surface lg:overflow-hidden lg:rounded-[22px]">
+        {/* Floating bar (desktop). On mobile the header comes from the shared layout `(rezim)`. */}
+        <div className="scroll-lift absolute inset-x-4 top-3.5 z-20 hidden h-10 items-center gap-2 lg:flex">
+          <Breadcrumb back={questionHref(question)} items={[{ label: question.trail[0] }, { label: `Otázka ${question.id}` }]} />
           <div className="flex-1" />
           <Segmented
             label="Režim otázky"
@@ -160,7 +175,7 @@ export function StudyView({ question }: { question: Question }) {
 
         {/* Thread */}
         <div className="thread-scroller flex-1 lg:overflow-y-auto">
-          <div className="mx-auto flex w-full max-w-[620px] flex-col gap-7 px-4 pt-6 pb-48 lg:px-0 lg:pt-[96px] lg:pb-40">
+          <div className="mx-auto flex w-full max-w-[620px] flex-col gap-7 px-4 pt-6 pb-[calc(var(--composer-h)+var(--chrome-b)+24px)] lg:px-0 lg:pt-[96px] lg:pb-40">
             <header className="flex flex-col gap-2">
               <p className="text-[13px] font-medium text-muted">{question.context}</p>
               <h1 className="text-[32px] leading-[1.1] font-semibold tracking-[-0.9px]">{question.title}</h1>
@@ -207,11 +222,11 @@ export function StudyView({ question }: { question: Question }) {
         {/* Scroll edge + composer */}
         {!unavailable && (
           <>
-            <div aria-hidden className="pointer-events-none fixed inset-x-0 bottom-0 z-10 h-[220px] bg-linear-to-b from-transparent to-(--bg-d) to-60% lg:absolute lg:h-[140px] lg:to-(--surface)" />
+            <div aria-hidden className="pointer-events-none fixed inset-x-0 bottom-(--kb) z-10 h-[calc(var(--composer-h)+var(--chrome-b)+40px)] bg-linear-to-b from-transparent to-(--bg-d) to-60% lg:absolute lg:bottom-0 lg:h-[140px] lg:to-(--surface)" />
             <form
               onSubmit={onSubmit}
               style={{ height: composerHeight }}
-              className="composer scroll-lift glass fixed inset-x-4 bottom-[94px] z-20 mx-auto flex max-w-[620px] items-center gap-2 rounded-full pr-2 pl-5 [--g-blur:24px] [--g-b:30px] lg:absolute lg:bottom-7"
+              className="composer scroll-lift glass fixed inset-x-4 bottom-[max(var(--chrome-b),calc(var(--kb)+8px))] z-20 mx-auto flex max-w-[620px] items-center gap-2 rounded-full pr-2 pl-5 [--g-blur:24px] [--g-b:30px] lg:absolute lg:bottom-7"
             >
               <label htmlFor="dotaz" className="sr-only">
                 Dotaz pro tutora

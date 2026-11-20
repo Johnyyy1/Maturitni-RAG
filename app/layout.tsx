@@ -10,6 +10,12 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  // Exposes env(safe-area-inset-*). resizes-content lifts bottom chrome above the keyboard
+  // in Chromium; iOS Safari ignores it, so the tutor composer also follows visualViewport.
+  viewportFit: "cover",
+  interactiveWidget: "resizes-content",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#F6F7FA" },
     { media: "(prefers-color-scheme: dark)", color: "#0A0B10" },
