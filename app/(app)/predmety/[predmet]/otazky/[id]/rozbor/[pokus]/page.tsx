@@ -6,6 +6,7 @@ import { RetryButton } from "@/components/retry";
 import { RouteLoading } from "@/components/loading";
 import { Breadcrumb } from "@/components/question";
 import { TopBar } from "@/components/shell/app-shell";
+import { CountUp } from "@/components/ui/count-up";
 import { Chip, CitationChip, ScoreRing } from "@/components/ui/bits";
 import { GlassButton, GlassIconButton, PrimaryPill } from "@/components/ui/buttons";
 import { StateCard } from "@/components/ui/state";
@@ -108,7 +109,7 @@ async function ReviewContent({ params }: Props) {
             <ScoreRing value={met / total} label={`${met} ze ${total} kritérií splněno`} />
             <div className="flex flex-col gap-0.5" aria-hidden>
               <span className="tnum text-[22px] font-semibold tracking-[-0.4px]">
-                {met} ze {total}
+                <CountUp value={met} /> ze {total}
               </span>
               <span className="text-[13px] text-muted">kritérií splněno</span>
             </div>
@@ -159,7 +160,7 @@ async function ReviewContent({ params }: Props) {
           <ScoreRing value={met / total} size={52} label={`${met} ze ${total} kritérií splněno`} />
           <div className="flex flex-col gap-0.5">
             <span className="tnum text-[18px] font-semibold">
-              {met} ze {total} kritérií
+              <CountUp value={met} /> ze {total} kritérií
             </span>
             <span className="text-[13px] text-muted">Zpětná vazba, ne výsledek maturity</span>
           </div>
@@ -190,7 +191,7 @@ function AnswerCard({ attempt }: { attempt: Attempt }) {
         <span className="tnum text-[13px] text-muted">{attempt.submitted}</span>
       </div>
       <p className="text-[16px] leading-[1.6]">{a.before}</p>
-      <figure className="flex flex-col gap-1.5 rounded-[4px_12px_12px_4px] border-l-[3px] border-warning bg-warning-soft px-3.5 py-3">
+      <figure className="flash-warning flex flex-col gap-1.5 rounded-[4px_12px_12px_4px] border-l-[3px] border-warning bg-warning-soft px-3.5 py-3">
         <blockquote className="text-[16px] leading-[1.6] font-medium">{a.flagged}</blockquote>
         <figcaption className="flex items-center gap-1.5 text-[13px] font-semibold text-warning">
           <CornerDownRight size={14} strokeWidth={2} aria-hidden />

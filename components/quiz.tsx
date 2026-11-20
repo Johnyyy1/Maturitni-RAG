@@ -2,6 +2,9 @@
 
 import { CornerDownLeft, RotateCcw, Timer, X } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import { AnimatePresence, motion, useIsPresent, useReducedMotion } from "motion/react";
+import type { ComponentProps } from "react";
+import { dur, ease } from "@/lib/motion";
 import { useCallback, useEffect, useState } from "react";
 import { DoneCard } from "@/components/done-card";
 import { ActionBar, capsule, FocusBar } from "@/components/focus";
@@ -29,7 +32,9 @@ function useElapsed(running: boolean) {
 export function QuizView({ quiz }: { quiz: Quiz }) {
   // Question count chosen in /kvizy/novy (?pocet=5).
   const requested = Number(useSearchParams().get("pocet"));
-  const count = requested > 0 ? Math.min(requested, quiz.questions.length) : quiz.questions.length;
+  const count = Number.isInteger(requested) && requested > 0 ? Math.min(requested, quiz.questions.length) : quiz.questions.length;
+  const [instant, setInstant] = useState(true);
+  const [direction, setDirection] = useState(1);
   const [index, setIndex] = useState(0);
   const [picked, setPicked] = useState<Key | null>(null);
   const [checked, setChecked] = useState(false);
@@ -38,8 +43,9 @@ export function QuizView({ quiz }: { quiz: Quiz }) {
   const time = useElapsed(!done);
   const q = quiz.questions[Math.min(index, count - 1)];
 
-  const confirm = useCallback(() => {
+  const confirm = useCallback((keyboard: boolean) => {
     if (!picked) return;
+    setInstant(keyboard);
     setChecked(true);
     setResults((r) => {
       const next = [...r];
@@ -48,8 +54,10 @@ export function QuizView({ quiz }: { quiz: Quiz }) {
     });
   }, [picked, q, index]);
 
-  const next = useCallback(() => {
-    setIndex((i) => i + 1);
+  const next = useCallback((keyboard: boolean, step = 1) => {
+    setInstant(keyboard);
+    setDirection(step);
+    setIndex((i) => Math.max(0, i + step));
     setPicked(null);
     setChecked(false);
   }, []);
@@ -60,11 +68,13 @@ export function QuizView({ quiz }: { quiz: Quiz }) {
       const k = e.key.toUpperCase() as Key;
       if (!checked && KEYS.includes(k)) {
         e.preventDefault();
+        setInstant(true);
         setPicked(k);
       } else if (e.key === "Enter" && !(e.target as HTMLElement).closest("a,button")) {
         e.preventDefault();
-        if (checked) next();
-        else confirm();
+        if (e.shiftKey) next(true, -1);
+        else if (checked) next(true);
+        else confirm(true);
       }
     };
     window.addEventListener("keydown", onKey);
@@ -87,7 +97,7 @@ export function QuizView({ quiz }: { quiz: Quiz }) {
         center={
           <div className={cn(capsule, "gap-3.5 px-[18px]")}>
             <span className="hidden truncate font-semibold sm:inline">{quiz.title}</span>
-            <ProgressDots total={count} current={Math.min(index, count - 1)} results={results} />
+            <ProgressDots total={count} current={Math.min(index, count - 1)} results={results} instant={instant} />
             <span className="tnum font-medium text-muted">
               {Math.min(index + 1, count)} / {count}
             </span>
@@ -138,47 +148,52 @@ export function QuizView({ quiz }: { quiz: Quiz }) {
           />
         ) : (
           <>
-            <fieldset className="surface w-full max-w-[700px] rounded-[30px] px-5 pt-8 pb-7 lg:px-11 lg:pt-11 lg:pb-10">
-              <p className={cn("text-[13px] font-semibold", !checked ? "text-accent" : results[index] === "ok" ? "text-success" : "text-error")}>
-                Otázka {index + 1}
-              </p>
-              <legend className="contents">
-                <h1 className="mt-3 text-[24px] leading-[1.2] font-semibold tracking-[-0.6px] lg:text-[30px] lg:tracking-[-0.8px]">{q.text}</h1>
-              </legend>
-              <p className="mt-3 text-[14px] text-muted" aria-live="polite">
-                {!checked
-                  ? "Vyber jednu možnost"
-                  : results[index] === "ok"
-                    ? "Správně. Odpověď byla potvrzena."
-                    : `Nesprávně. Správná odpověď je ${q.correct}.`}
-              </p>
-              <div className="mt-7 flex flex-col gap-2.5">
-                {q.options.map((o) => (
-                  <OptionRow
-                    key={o.key}
-                    name={`otazka-${index}`}
-                    value={o.key}
-                    label={o.text}
-                    state={optionState(o.key)}
-                    disabled={checked}
-                    onSelect={() => setPicked(o.key)}
-                  />
-                ))}
-              </div>
-              {checked && (
-                <div className="mt-5 flex flex-col gap-3 border-t border-border pt-[18px]">
-                  <p className="text-[13px] font-semibold text-muted">Proč</p>
-                  <p className="text-[16px] leading-[1.55]">{q.why}</p>
-                  <CitationChip n={1} label={q.citation} href="/predmety/dejepis/otazky/7/studium#zdroj-1" />
-                </div>
-              )}
-            </fieldset>
+            <div className="relative grid w-full max-w-[700px]">
+              <AnimatePresence initial={false} custom={{ direction, instant }}>
+                <QuestionPanel key={index} instant={instant} direction={direction} className="col-start-1 row-start-1 surface w-full max-w-[700px] rounded-[30px] px-5 pt-8 pb-7 lg:px-11 lg:pt-11 lg:pb-10">
+                  <p className={cn("text-[13px] font-semibold", !checked ? "text-accent" : results[index] === "ok" ? "text-success" : "text-error")}>
+                    Otázka {index + 1}
+                  </p>
+                  <legend className="contents">
+                    <h1 className="mt-3 text-[24px] leading-[1.2] font-semibold tracking-[-0.6px] lg:text-[30px] lg:tracking-[-0.8px]">{q.text}</h1>
+                  </legend>
+                  <p className="mt-3 text-[14px] text-muted" aria-live="polite">
+                    {!checked
+                      ? "Vyber jednu možnost"
+                      : results[index] === "ok"
+                        ? "Správně. Odpověď byla potvrzena."
+                        : `Nesprávně. Správná odpověď je ${q.correct}.`}
+                  </p>
+                  <div className="mt-7 flex flex-col gap-2.5">
+                    {q.options.map((o) => (
+                      <OptionRow
+                        key={o.key}
+                        name={`otazka-${index}`}
+                        value={o.key}
+                        label={o.text}
+                        state={optionState(o.key)}
+                        disabled={checked}
+                        instant={instant}
+                        onSelect={(keyboard) => { setInstant(keyboard); setPicked(o.key); }}
+                      />
+                    ))}
+                  </div>
+                  {checked && (
+                    <div className={cn("mt-5 flex flex-col gap-3 border-t border-border pt-[18px]", !instant && "rise-in")}>
+                      <p className="text-[13px] font-semibold text-muted">Proč</p>
+                      <p className="text-[16px] leading-[1.55]">{q.why}</p>
+                      <CitationChip n={1} label={q.citation} href="/predmety/dejepis/otazky/7/studium#zdroj-1" />
+                    </div>
+                  )}
+                </QuestionPanel>
+              </AnimatePresence>
+            </div>
 
             <ActionBar label="Odpověď">
               {checked ? (
                 <span className="pl-3 text-[14px] font-medium text-muted lg:pl-0">Vyhodnoceno podle klíče</span>
               ) : (
-                <button type="button" onClick={next} className="hit pl-3 text-[14px] font-medium text-muted hover:text-fg lg:pl-0">
+                <button type="button" onClick={(e) => next(e.detail === 0, e.shiftKey ? -1 : 1)} className="hit pl-3 text-[14px] font-medium text-muted hover:text-fg lg:pl-0">
                   Přeskočit
                 </button>
               )}
@@ -190,11 +205,11 @@ export function QuizView({ quiz }: { quiz: Quiz }) {
                 {checked ? "další" : "potvrdit"}
               </span>
               {checked ? (
-                <PrimaryPill onClick={next} arrow size={44} className="pr-4 pl-5">
-                  {index + 1 === count ? "Dokončit kvíz" : "Další otázka"}
+                <PrimaryPill onClick={(e) => next(e.detail === 0, e.shiftKey ? -1 : 1)} arrow size={44} className="pr-4 pl-5">
+                  <span className={cn(!instant && "fade-in")}>{index + 1 === count ? "Dokončit kvíz" : "Další otázka"}</span>
                 </PrimaryPill>
               ) : (
-                <PrimaryPill onClick={confirm} disabled={!picked} size={44}>
+                <PrimaryPill onClick={(e) => confirm(e.detail === 0)} disabled={!picked} size={44}>
                   Potvrdit odpověď
                 </PrimaryPill>
               )}
@@ -203,5 +218,27 @@ export function QuizView({ quiz }: { quiz: Quiz }) {
         )}
       </div>
     </>
+  );
+}
+
+function QuestionPanel({ instant, direction, className, ...props }: ComponentProps<typeof motion.fieldset> & { instant: boolean; direction: number }) {
+  const present = useIsPresent();
+  const reduce = useReducedMotion();
+  return (
+    <motion.fieldset
+      {...props}
+      className={cn(className, !present && "pointer-events-none absolute inset-x-0 top-0")}
+      inert={!present}
+      aria-hidden={!present || undefined}
+      initial={instant ? false : { opacity: 0, x: reduce ? 0 : direction * 16 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit="out"
+      variants={{ out: (next: { direction: number; instant: boolean }) => ({
+        opacity: 0,
+        x: reduce ? 0 : -next.direction * 8,
+        transition: { duration: next.instant ? 0 : dur.exit, ease: ease.out },
+      }) }}
+      transition={{ duration: instant ? 0 : dur.panel, ease: ease.out }}
+    />
   );
 }

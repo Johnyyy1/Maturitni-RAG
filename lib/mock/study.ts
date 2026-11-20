@@ -199,9 +199,16 @@ export const ratings: Rating[] = [
 ];
 
 /** Concept map of question dejepis/7. Coordinates are node top-left corners on the 812 × 880 canvas. */
-export const conceptMap: { edgesPath: string; nodes: ConceptNode[] } = {
-  edgesPath:
-    "M406 274l0 46q0 12-12 12l-232 0q-12 0-12 12l0 46m256-116l0 116m0-116l0 46q0 12 12 12l232 0q12 0 12 12l0 46m-512 40l0 53q0 12-12 12l-41 0q-12 0-12 12l0 53m65-130l0 53q0 12 12 12l61 0q12 0 12 12l0 53m171-130l0 130m256-130l0 130",
+export const conceptMap: { edges: Record<string, string>; nodes: ConceptNode[] } = {
+  edges: {
+    priciny: "M406 274l0 46q0 12-12 12l-232 0q-12 0-12 12l0 46",
+    zaminka: "M406 274l0 116",
+    dusledky: "M406 274l0 46q0 12 12 12l232 0q12 0 12 12l0 46",
+    rivalita: "M150 430l0 53q0 12-12 12l-41 0q-12 0-12 12l0 53",
+    bloky: "M150 430l0 53q0 12 12 12l61 0q12 0 12 12l0 53",
+    atentat: "M406 430l0 130",
+    monarchie: "M662 430l0 130",
+  },
   nodes: [
     { id: "valka", label: "První světová válka", x: 310, y: 316, root: true },
     { id: "priciny", label: "Dlouhodobé příčiny", x: 71, y: 480, parent: "valka" },

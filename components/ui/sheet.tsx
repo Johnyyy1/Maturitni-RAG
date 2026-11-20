@@ -1,43 +1,38 @@
 "use client";
 
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { useEffect, useRef, type ReactNode } from "react";
+import { Drawer } from "@base-ui/react/drawer";
+import { useState, type ReactNode } from "react";
 
-/** Bottom sheet (mobile): thick glass, slides up with a bounce-free spring. Native <dialog> handles focus and Esc. */
+const snapPoints = [0.53, 0.82];
+
 export function Sheet({ open, onClose, label, children }: { open: boolean; onClose: () => void; label: string; children: ReactNode }) {
-  const ref = useRef<HTMLDialogElement>(null);
-  const reduce = useReducedMotion();
-
-  useEffect(() => {
-    const d = ref.current;
-    if (open && d && !d.open) d.showModal();
-  }, [open]);
+  const [previous, setPrevious] = useState(children);
+  if (open && children !== previous) setPrevious(children);
+  const [snap, setSnap] = useState<Drawer.Root.SnapPoint | null>(snapPoints[1]);
 
   return (
-    <dialog
-      ref={ref}
-      aria-label={label}
-      onCancel={(e) => {
-        e.preventDefault();
-        onClose();
-      }}
-      onClick={(e) => e.target === e.currentTarget && onClose()}
-      className="fixed inset-0 m-0 h-dvh max-h-none w-full max-w-none bg-transparent p-0 backdrop:bg-[#0b0d1433]"
+    <Drawer.Root
+      open={open}
+      onOpenChange={(next) => { if (!next) onClose(); }}
+      onOpenChangeComplete={(next) => { if (!next) setSnap(snapPoints[1]); }}
+      snapPoints={snapPoints}
+      snapPoint={snap}
+      onSnapPointChange={setSnap}
     >
-      <AnimatePresence onExitComplete={() => ref.current?.close()}>
-        {open && (
-          <motion.div
-            initial={reduce ? { opacity: 0 } : { y: "100%" }}
-            animate={reduce ? { opacity: 1 } : { y: 0 }}
-            exit={reduce ? { opacity: 0 } : { y: "100%" }}
-            transition={{ type: "spring", bounce: 0, duration: 0.35 }}
-            className="glass-thick absolute inset-x-2 bottom-2 flex max-h-[82dvh] flex-col overflow-hidden rounded-[28px] pb-[env(safe-area-inset-bottom)]"
-          >
-            <span aria-hidden className="mx-auto mt-2 h-[5px] w-9 shrink-0 rounded-full bg-strong" />
-            {children}
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </dialog>
+      <Drawer.Portal>
+        <Drawer.Backdrop className="sheet-backdrop fixed inset-0 z-40 bg-[#0b0d1466]" />
+        <Drawer.Viewport className="fixed inset-0 z-50 flex items-end px-2">
+          <Drawer.Popup className="sheet-popup glass-thick flex h-[82dvh] w-full flex-col rounded-t-[28px]">
+            <Drawer.Title className="sr-only">{label}</Drawer.Title>
+            <div className="flex h-7 shrink-0 touch-none items-center justify-center" aria-hidden>
+              <span className="h-[5px] w-9 rounded-full bg-strong" />
+            </div>
+            <Drawer.Content className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)]">
+              {open ? children : previous}
+            </Drawer.Content>
+          </Drawer.Popup>
+        </Drawer.Viewport>
+      </Drawer.Portal>
+    </Drawer.Root>
   );
 }

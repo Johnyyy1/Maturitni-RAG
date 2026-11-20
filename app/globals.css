@@ -3,6 +3,15 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* Hover only with a fine pointer: a tap on touch must never leave a hover state stuck. */
+@custom-variant hover {
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      @slot;
+    }
+  }
+}
+
 @theme inline {
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
@@ -32,7 +41,34 @@
   --color-axis: var(--axis);
   --color-glass-shadow: var(--glass-shadow);
 
-  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  /* No Tailwind easing presets (ease-in, ease-out…): only the motion tokens below, via ease-(--ease-out). */
+  --ease-*: initial;
+  --animate-*: initial;
+}
+
+/* Motion tokens. Mirrored in lib/motion.ts. No other curves or durations. */
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1); /* entering, exiting, UI */
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1); /* moving and morphing on screen */
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1); /* sheets, drawers */
+  --ease-icon: cubic-bezier(0.2, 0, 0, 1); /* CSS icon cross-fade */
+  --dur-press: 120ms;
+  --dur-hover: 150ms;
+  --dur-tooltip: 150ms;
+  --dur-popover: 180ms;
+  --dur-panel: 240ms;
+  --dur-exit: 150ms;
+  /* Values the motion brief sets for single moments. */
+  --dur-theme: 250ms; /* light/dark cross-fade */
+  --dur-draw: 600ms; /* parabola, score ring, one-off highlights */
+  --dur-pulse: 2s; /* live dot */
+}
+
+/* Animate the local glass hover without affecting its descendants. */
+@property --g-hover {
+  syntax: "<number>";
+  inherits: false;
+  initial-value: 0;
 }
 
 @layer base {
@@ -58,9 +94,11 @@
   p {
     text-wrap: pretty;
   }
+  /* The focus ring never animates: it appears at once. */
   :focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 2px;
+    transition-property: none;
   }
   button:not(:disabled), [role="button"], a[href], label[for], summary {
     cursor: pointer;
@@ -107,8 +145,9 @@
     backdrop-filter: blur(var(--g-blur)) saturate(180%);
     box-shadow:
       inset 0 1px 0 var(--glass-shine),
+      inset 0 calc(var(--g-hover) * 10px) calc(var(--g-hover) * 16px) calc(var(--g-hover) * -8px) var(--glass-sheen),
       0 1px 2px var(--glass-shadow-near),
-      0 var(--g-y) var(--g-b) var(--glass-shadow);
+      0 calc(var(--g-y) + var(--g-hover) * 4px) calc(var(--g-b) + var(--g-hover) * 12px) var(--glass-shadow);
   }
   .glass-thin {
     --g-blur: 16px;
@@ -165,12 +204,32 @@
       0 4px 12px var(--glass-shadow);
   }
 
-  /* Press feedback. */
+  /*
+   * Press feedback on pointerdown (:active), plus the colour/shadow hover of every pressable.
+   * Transitions, not keyframes: a release mid-press reverses smoothly.
+   */
   .press {
-    transition: transform 120ms var(--ease-out);
+    transition-property: transform, background-color, box-shadow, color, opacity, --g-hover;
+    transition-duration: var(--dur-press), var(--dur-hover), var(--dur-hover), var(--dur-hover), var(--dur-hover), var(--dur-hover);
+    transition-timing-function: var(--ease-out), ease, ease, ease, ease, ease;
   }
-  .press:active:not(:disabled) {
+  .press:active:not(:disabled, [aria-disabled="true"]) {
     transform: scale(0.96);
+  }
+
+  /* Arrows and chevrons that lean 2px into the direction of travel on hover. */
+  .nudge {
+    transition: translate var(--dur-hover) var(--ease-out);
+  }
+
+  /* Clickable content card: ring and shadow only. It never grows or lifts. */
+  .card-link {
+    transition: box-shadow var(--dur-hover) ease;
+  }
+
+  /* List and table rows: background only. */
+  .row {
+    transition: background-color var(--dur-press) ease;
   }
 
   /* Extends the hit area of small controls to at least 40px. */
@@ -181,6 +240,56 @@
     content: "";
     position: absolute;
     inset: -4px;
+  }
+  @media (pointer: coarse) {
+    .hit::after {
+      inset: -6px; /* 44px on touch */
+    }
+  }
+
+  /* Tooltip and popover surfaces (Base UI). Scale out of the trigger, never from scale(0). */
+  .tooltip {
+    transform-origin: var(--transform-origin);
+    transition:
+      opacity var(--dur-tooltip) var(--ease-out),
+      transform var(--dur-tooltip) var(--ease-out);
+  }
+  .popover {
+    transform-origin: var(--transform-origin);
+    transition:
+      opacity var(--dur-popover) var(--ease-out),
+      transform var(--dur-popover) var(--ease-out);
+  }
+  :is(.tooltip, .popover):is([data-starting-style], [data-ending-style]) {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  .popover[data-ending-style] {
+    transition-duration: var(--dur-exit);
+  }
+  /* Once one tooltip is open, the next one appears at once. */
+  .tooltip[data-instant] {
+    transition-duration: 0ms;
+  }
+}
+
+/* Hover (fine pointer only): ink a shade lighter, glass gets a stronger sheen and lifts. No movement. */
+@media (hover: hover) and (pointer: fine) {
+  .press:is(.glass, .glass-thin, .glass-thick):not(:disabled, [aria-disabled="true"]):hover {
+    --g-hover: 1;
+  }
+  .press.ink:not(:disabled, [aria-disabled="true"]):hover {
+    background-color: color-mix(in oklab, var(--fg) 86%, var(--panel));
+  }
+  :is(a, button):hover > .nudge,
+  :is(a, button):hover .nudge {
+    translate: 2px 0;
+  }
+  .card-link:hover {
+    box-shadow:
+      inset 0 0 0 1px var(--ring-strong),
+      0 1px 2px var(--shadow-a),
+      0 14px 34px var(--glass-shadow);
   }
 }
 
@@ -199,12 +308,253 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .press {
-    transition: none;
+/* ── Floating bars and scroll edges (Apple): CSS scroll-driven, no JS. ────────────────────────── */
+@keyframes edge-in {
+  from {
+    opacity: 0;
   }
-  .press:active:not(:disabled) {
+  to {
+    opacity: 1;
+  }
+}
+.scroll-edge {
+  opacity: 0;
+}
+@supports (animation-timeline: scroll()) {
+  .scroll-lift :where(.glass, .glass-thin, .glass-thick)::before,
+  .scroll-lift:is(.glass, .glass-thin, .glass-thick)::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    box-shadow: inset 0 3px 9px var(--glass-sheen), 0 6px 16px var(--glass-shadow);
+    animation: edge-in linear both;
+    animation-timeline: scroll(root block);
+    animation-range: 0 48px;
+  }
+  .scroll-edge {
+    animation: edge-in linear both;
+    animation-timeline: scroll(root block);
+    animation-range: 0 24px;
+  }
+  /* Bars over an inner scroller (tutor thread on desktop): a named timeline. */
+  @media (min-width: 1024px) {
+    .thread-scope {
+      timeline-scope: --thread;
+    }
+    .thread-scroller {
+      scroll-timeline: --thread block;
+    }
+    .thread-scope .scroll-lift :where(.glass, .glass-thin, .glass-thick)::before,
+    .thread-scope .scroll-lift:is(.glass, .glass-thin, .glass-thick)::before {
+      animation-timeline: --thread;
+    }
+  }
+}
+
+/* ── One-off sequences (keyframes, never on interactive state) ─────────────────────────────── */
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+    filter: blur(4px);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes materialize {
+  from {
+    opacity: 0;
+    transform: scale(0.98);
+    filter: blur(4px);
+  }
+}
+@keyframes draw {
+  from {
+    stroke-dashoffset: 1;
+  }
+}
+@keyframes grow-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes grow-y {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes stream-in {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+  }
+}
+@keyframes flash-soft {
+  from {
+    background-color: var(--soft);
+  }
+}
+@keyframes flash-warning {
+  30% {
+    background-color: color-mix(in oklab, var(--warning) 28%, var(--warning-soft));
+  }
+}
+@keyframes ring-draw {
+  from {
+    stroke-dasharray: 0 100;
+  }
+}
+@keyframes live {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.5;
+  }
+}
+@keyframes spin {
+  to {
+    rotate: 360deg;
+  }
+}
+
+/* Today (21, 25): entrance on the first visit of the session only. <html data-seen-today> skips it. */
+html:not([data-seen-today]) .today-enter {
+  animation: rise-in var(--dur-panel) var(--ease-out) both;
+  animation-delay: var(--d, 0ms);
+}
+html:not([data-seen-today]) .today-draw {
+  animation: draw var(--dur-draw) var(--ease-out) both;
+  animation-delay: var(--d, 0ms);
+}
+html:not([data-seen-today]) .today-materialize {
+  animation: materialize var(--dur-panel) var(--ease-out) both;
+  animation-delay: var(--d, 0ms);
+}
+html:not([data-seen-today]) .today-fill {
+  transform-origin: left;
+  animation: grow-x var(--dur-draw) var(--ease-out) both;
+  animation-delay: var(--d, 0ms);
+}
+html:not([data-seen-today]) .today-bar {
+  transform-origin: bottom;
+  animation: grow-y var(--dur-panel) var(--ease-out) both;
+  animation-delay: var(--d, 0ms);
+}
+
+/* Tutor stream: each new chunk fades in place. Text never moves. */
+.stream-in {
+  animation: stream-in var(--dur-exit) var(--ease-out) both;
+}
+/* Source passage: one short highlight when it opens. */
+.flash-soft {
+  animation: flash-soft var(--dur-draw) var(--ease-out);
+}
+/* Rozbor: the flagged sentence lights up once, after the ring has drawn. */
+.flash-warning {
+  animation: flash-warning var(--dur-draw) var(--ease-out) var(--dur-draw);
+}
+/* Score ring drawing once. */
+.ring-draw {
+  animation: ring-draw var(--dur-draw) var(--ease-out) both;
+}
+/* “Živě” dot. */
+.live {
+  animation: live var(--dur-pulse) linear infinite alternate;
+}
+.spin {
+  animation: spin 1s linear infinite;
+}
+
+/* ── View transitions: route content and theme ───────────────────────────────────────────── */
+::view-transition {
+  pointer-events: none;
+}
+/* Routes: the page around the content (sidebar, tab bar, background) stays put. */
+::view-transition-old(root) {
+  display: none;
+}
+::view-transition-new(root) {
+  animation: none;
+}
+::view-transition-group(.page) {
+  animation: none;
+}
+::view-transition-old(.page) {
+  animation: var(--dur-exit) ease both edge-in reverse;
+}
+::view-transition-new(.page) {
+  animation: var(--dur-exit) ease both edge-in;
+}
+/* Back on mobile: the screen leaves to the right, the previous one comes in from the left (parallax). */
+@keyframes vt-out-right {
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes vt-in-parallax {
+  from {
+    transform: translateX(-25%);
+  }
+}
+::view-transition-group(.nav-back) {
+  animation: none;
+}
+::view-transition-old(.nav-back) {
+  animation: var(--dur-exit) ease both edge-in reverse;
+}
+::view-transition-new(.nav-back) {
+  animation: var(--dur-exit) ease both edge-in;
+}
+@media (max-width: 1023px) and (prefers-reduced-motion: no-preference) {
+  :root[data-nav-back]::view-transition-old(.page),
+  ::view-transition-old(.nav-back) {
+    z-index: 1;
+    animation: var(--dur-panel) var(--ease-drawer) both vt-out-right;
+  }
+  :root[data-nav-back]::view-transition-new(.page),
+  ::view-transition-new(.nav-back) {
+    animation: var(--dur-panel) var(--ease-drawer) both vt-in-parallax;
+  }
+}
+/* Theme: the whole page cross-fades. */
+:root:active-view-transition-type(theme)::view-transition-old(root) {
+  display: block;
+  animation: var(--dur-theme) ease both edge-in reverse;
+}
+:root:active-view-transition-type(theme)::view-transition-new(root) {
+  animation: var(--dur-theme) ease both edge-in;
+}
+
+/* ── Accessibility ───────────────────────────────────────────────────────────────────────── */
+/* Reduced motion: only fades stay. No movement, scale, stagger or blur. */
+@media (prefers-reduced-motion: reduce) {
+  .press:active:not(:disabled, [aria-disabled="true"]) {
     transform: none;
+  }
+  :is(a, button):hover .nudge {
+    translate: none;
+  }
+  :is(.tooltip, .popover):is([data-starting-style], [data-ending-style]) {
+    transform: none;
+  }
+  html:not([data-seen-today]) :is(.today-enter, .today-materialize, .today-bar, .today-fill) {
+    animation-name: fade-in;
+    animation-delay: 0ms;
+  }
+  html:not([data-seen-today]) .today-draw {
+    animation: none;
+  }
+  .stream-in {
+    animation-name: fade-in;
+  }
+  .live {
+    animation: none;
   }
 }
 
@@ -245,78 +595,109 @@
   }
 }
 
-/* Flashcard rating buttons: lift on hover, sink and flash their tone on press. */
-@layer components {
-  .rate {
-    transition:
-      transform 160ms var(--ease-out),
-      background-color 160ms ease,
-      box-shadow 160ms ease;
-  }
-  .rate-dot,
-  .rate-key {
-    transition:
-      transform 160ms var(--ease-out),
-      background-color 160ms ease,
-      color 160ms ease;
-  }
-  .rate:focus-visible {
-    background: var(--panel);
-  }
-  @media (hover: hover) and (pointer: fine) {
-    .rate:hover {
-      background: var(--panel);
-      box-shadow: 0 2px 8px var(--glass-shadow);
-      transform: translateY(-2px);
-    }
-    .rate:hover .rate-dot {
-      transform: scale(1.45);
-    }
-    .rate:hover .rate-key {
-      background: var(--fg);
-      color: var(--on-fg);
-    }
-    .lift:hover {
-      transform: translateY(-1px);
-    }
-    .lift:hover .flip-icon {
-      transform: rotate(180deg);
-    }
-  }
-  .rate:active {
-    transform: translateY(0) scale(0.96);
-    box-shadow: none;
-    transition-duration: 100ms;
-  }
-  .flip-icon {
-    transition: transform 300ms var(--ease-out);
-  }
-  /* Flashcard turning over: a deliberate on-screen move, so a strong ease-in-out, a little longer than UI. */
-  .flip-turn {
-    transition: transform 520ms cubic-bezier(0.77, 0, 0.175, 1);
-  }
-  .lift {
-    transition: transform 160ms var(--ease-out);
-  }
-  .lift:active {
-    transform: scale(0.96);
-  }
+.sidebar-slide {
+  transition: translate var(--dur-panel) var(--ease-drawer);
+}
+.sidebar-slide[data-collapsed] {
+  translate: calc(-100% - 12px);
+}
+.shell-content {
+  transition: padding-left var(--dur-panel) var(--ease-drawer);
+}
+.sheet-backdrop {
+  opacity: calc(1 - var(--drawer-swipe-progress, 0));
+  transition: opacity var(--dur-panel) var(--ease-drawer);
+}
+.sheet-popup {
+  --sheet-offset: calc(var(--drawer-snap-point-offset, 0px) + var(--drawer-swipe-movement-y, 0px));
+  transform: translateY(var(--sheet-offset));
+  padding-bottom: max(0px, var(--sheet-offset));
+  transition: transform var(--dur-panel) var(--ease-drawer), opacity var(--dur-exit) var(--ease-out);
+}
+.sheet-popup:is([data-starting-style], [data-ending-style]) {
+  transform: translateY(100%);
+  opacity: 0;
+}
+.sheet-backdrop:is([data-starting-style], [data-ending-style]) {
+  opacity: 0;
+}
+.sheet-popup[data-ending-style] {
+  transition-duration: calc(var(--dur-exit) * var(--drawer-swipe-strength, 1));
+}
+:is(.sheet-popup, .sheet-backdrop)[data-swiping] {
+  transition-duration: 0ms;
+}
+.drawer-page {
+  transform-origin: center top;
+  transition: transform var(--dur-panel) var(--ease-drawer);
+}
+.drawer-page[data-active] {
+  transform: scale(calc(0.98 + 0.02 * var(--drawer-swipe-progress, 0)));
+}
+@media (prefers-reduced-motion: reduce) {
+  .sidebar-slide, .shell-content, .drawer-page { transition: none; }
+  .drawer-page[data-active] { transform: none; }
+  .sheet-popup:is([data-starting-style], [data-ending-style]) { transform: translateY(var(--sheet-offset)); }
+  .sheet-popup { transition-property: opacity; }
+  .ring-draw { animation: none; }
+}
+
+.rise-in { animation: rise-in var(--dur-panel) var(--ease-out) both; }
+.fade-in { animation: fade-in var(--dur-exit) var(--ease-out) both; }
+.option-result { transition: background-color var(--dur-evaluation) ease, opacity var(--dur-evaluation) ease; }
+.option-key { transition: background-color var(--dur-press) ease, color var(--dur-press) ease; }
+:root { --dur-evaluation: 200ms; }
+@media (prefers-reduced-motion: reduce) {
+  .rise-in { animation-name: fade-in; }
+}
+
+html:not([data-seen-today]) .today-fill { animation-delay: 140ms; }
+@media (min-width: 1280px) { html:not([data-seen-today]) .today-fill { animation-delay: 670ms; } }
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-seen-today]) .today-fill { animation-delay: 0ms; }
+}
+
+.badge-draw { animation: draw var(--dur-draw) var(--ease-out) both; }
+.composer { transition: height var(--dur-popover) var(--ease-out); }
+.citation-enter { animation: materialize var(--dur-popover) var(--ease-out) both; }
+@media (prefers-reduced-motion: reduce) {
+  .composer, .badge-draw { animation: none; transition: none; }
+  .citation-enter { animation-name: fade-in; }
+}
+
+.map-edge { transition: stroke var(--dur-press) ease; }
+
+[data-sonner-toaster] [data-sonner-toast] {
+  transition-duration: var(--dur-popover);
+  transition-timing-function: var(--ease-out);
+}
+[data-sonner-toaster] [data-sonner-toast][data-removed="true"] {
+  transition-duration: var(--dur-exit);
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-sonner-toaster] [data-sonner-toast] { transition-property: opacity; }
+  .flash-soft, .flash-warning { animation: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .rate,
-  .rate-dot,
-  .rate-key,
-  .lift,
-  .flip-icon {
-    transition-property: background-color, color, box-shadow;
-  }
-  .rate:hover,
-  .rate:active,
-  .lift:hover,
-  .lift:active,
-  .rate:hover .rate-dot,
-  .lift:hover .flip-icon {
-    transform: none;
-  }
+  .spin { animation: none; }
+}
+
+/* The greeting can blur on entry. Large card regions stay on transform and opacity. */
+@keyframes rise-surface {
+  from { opacity: 0; transform: translateY(8px); }
+}
+@media (prefers-reduced-motion: no-preference) {
+  html:not([data-seen-today]) .today-wide { animation-name: rise-surface; }
+}
+
+/* Opaque cards prevent the next two cards from showing through the active one. */
+.flashcard-face {
+  background: linear-gradient(var(--surface), var(--surface)), var(--bg-d);
+}
+.card-reveal {
+  animation: stream-in var(--dur-popover) var(--ease-out) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .card-reveal { animation-name: fade-in; }
 }

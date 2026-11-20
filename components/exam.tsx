@@ -1,6 +1,10 @@
 "use client";
 
-import { ChevronsUpDown, CircleCheck, CircleX, CloudCheck, Eye, EyeOff, Mic, X } from "lucide-react";
+import { Check, LoaderCircle, ChevronsUpDown, CircleCheck, CircleX, CloudCheck, Eye, EyeOff, Mic, X } from "lucide-react";
+import { Select } from "@base-ui/react/select";
+import { motion, useReducedMotion } from "motion/react";
+import { toast } from "sonner";
+import { IconSwap } from "@/components/ui/icon-swap";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState, type FormEvent } from "react";
 import { ActionBar, capsule, FocusBar } from "@/components/focus";
@@ -39,7 +43,7 @@ export function ExamView({ question }: { question: Question }) {
         left={<GlassIconButton href={questionHref(question)} icon={X} label="Ukončit pokus" size={44} />}
         center={
           <div className={capsule}>
-            <span aria-hidden className="size-2 shrink-0 rounded-full bg-error" />
+            <span aria-hidden className="live size-2 shrink-0 rounded-full bg-error" />
             <span className="font-semibold whitespace-nowrap">Zkouška nanečisto</span>
             <span className="hidden truncate font-medium text-muted lg:inline">{exam.label}</span>
           </div>
@@ -69,8 +73,9 @@ function TextTask({ question }: { question: Question }) {
   const router = useRouter();
   const key = `koncept:${question.subject}/${question.id}`;
   const [text, setText] = useState("");
-  const [saved, setSaved] = useState(false);
-  const [sending, setSending] = useState(false);
+  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  const [submission, setSubmission] = useState<"idle" | "sending" | "sent">("idle");
+  const reduce = useReducedMotion();
   const words = text.trim() ? text.trim().split(/\s+/).length : 0;
   const fieldId = useId();
 
@@ -80,32 +85,56 @@ function TextTask({ question }: { question: Question }) {
     if (draft) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- one-time sync from localStorage after hydration
       setText(draft);
-      setSaved(true);
+      setSaveState("saved");
     }
   }, [key]);
 
   useEffect(() => {
-    if (!text) return;
+    if (saveState !== "saving") return;
     const t = setTimeout(() => {
       try {
-        localStorage.setItem(key, text);
-        setSaved(true);
+        if (text) localStorage.setItem(key, text);
+        else localStorage.removeItem(key);
+        setSaveState(text ? "saved" : "idle");
       } catch {
-        /* storage blocked: the answer stays in memory */
+        setSaveState("idle");
       }
-    }, 600);
+    }, 2000);
     return () => clearTimeout(t);
-  }, [text, key]);
+  }, [text, key, saveState]);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
-    if (!words) return;
-    setSending(true);
-    const { attempt } = await submitAttempt(question.subject, question.id, text);
+    if (!words || submission !== "idle" || !window.confirm("Odevzdat odpověď a otevřít rozbor?")) return;
+    setSubmission("sending");
     try {
-      localStorage.removeItem(key);
-    } catch {}
-    router.push(questionHref(question, `rozbor/${attempt}`));
+      const { attempt } = await submitAttempt(question.subject, question.id, text);
+      setSubmission("sent");
+      setSaveState("idle");
+      try {
+        localStorage.removeItem(key);
+      } catch {}
+      router.push(questionHref(question, `rozbor/${attempt}`));
+    } catch {
+      setSubmission("idle");
+      toast.error("Odpověď se nepodařilo odevzdat");
+    }
+  }
+
+  function submitButton(size: 44 | 52) {
+    return (
+      <motion.div layout={reduce ? false : "size"} className={size === 52 ? cn("ml-auto flex justify-end lg:hidden", submission === "idle" && "flex-1") : "hidden lg:flex"}>
+        <PrimaryPill type="submit" size={size} full={size === 52 && submission === "idle"} disabled={!words || submission !== "idle"}
+          aria-label={submission === "sending" ? "Odevzdávám odpověď" : submission === "sent" ? "Odpověď odevzdána" : "Odevzdat odpověď"}
+          aria-busy={submission === "sending"}>
+          {submission === "idle" ? "Odevzdat odpověď" : (
+            <IconSwap state={submission}>
+              {submission === "sending" ? <LoaderCircle size={18} className="spin" aria-hidden /> : <Check size={18} aria-hidden />}
+            </IconSwap>
+          )}
+        </PrimaryPill>
+      </motion.div>
+    );
   }
 
   return (
@@ -128,7 +157,7 @@ function TextTask({ question }: { question: Question }) {
             value={text}
             onChange={(e) => {
               setText(e.target.value);
-              setSaved(false);
+              setSaveState("saving");
             }}
             placeholder="Napiš odpověď vlastními slovy…"
             className="flex-1 resize-none bg-transparent text-[16px] leading-[1.6] text-fg outline-none placeholder:text-muted lg:text-[17px]"
@@ -141,10 +170,12 @@ function TextTask({ question }: { question: Question }) {
         </div>
         <div className="mt-3.5 hidden items-center gap-4 text-[13px] text-muted lg:flex">
           <span className="flex flex-1 items-center gap-1.5" aria-live="polite">
-            {saved && (
+            {saveState !== "idle" && (
               <>
-                <CloudCheck size={15} strokeWidth={1.5} className="text-success" aria-hidden />
-                Uloženo průběžně
+                <IconSwap state={saveState}>
+                  {saveState === "saved" ? <CloudCheck size={15} className="text-success" aria-hidden /> : <LoaderCircle size={15} className="spin" aria-hidden />}
+                </IconSwap>
+                {saveState === "saved" ? "Uloženo průběžně" : "Ukládám…"}
               </>
             )}
           </span>
@@ -160,14 +191,8 @@ function TextTask({ question }: { question: Question }) {
         <span className="lg:hidden">
           <GlassIconButton icon={Mic} label="Diktovat" size={52} variant="plain" iconSize={20} aria-disabled />
         </span>
-        <span className="hidden lg:contents">
-          <PrimaryPill type="submit" size={44} disabled={!words || sending}>
-            Odevzdat odpověď
-          </PrimaryPill>
-        </span>
-        <PrimaryPill type="submit" size={52} full disabled={!words || sending} className="flex-1 lg:hidden">
-          Odevzdat odpověď
-        </PrimaryPill>
+        {submitButton(44)}
+        {submitButton(52)}
       </ActionBar>
     </form>
   );
@@ -217,20 +242,26 @@ function NumberTask({ question, exam }: { question: Question; exam: ExamNumber }
             <label htmlFor={ids.unit} className="text-[13px] font-semibold">
               Jednotka
             </label>
-            <span className="relative">
-              <select
-                id={ids.unit}
-                value={unit}
-                disabled={!!result}
-                onChange={(e) => setUnit(e.target.value)}
-                className={cn(field, "h-[52px] appearance-none pr-8 pl-4 text-[16px] font-medium")}
-              >
-                {exam.units.map((u) => (
-                  <option key={u}>{u}</option>
-                ))}
-              </select>
-              <ChevronsUpDown size={14} strokeWidth={1.5} className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-muted" aria-hidden />
-            </span>
+            <Select.Root value={unit} disabled={!!result} onValueChange={(next) => { if (next) setUnit(next); }}>
+              <Select.Trigger id={ids.unit} className={cn(field, "flex h-[52px] items-center justify-between px-4 text-[16px] font-medium")}>
+                <Select.Value />
+                <Select.Icon><ChevronsUpDown size={14} className="text-muted" aria-hidden /></Select.Icon>
+              </Select.Trigger>
+              <Select.Portal>
+                <Select.Positioner alignItemWithTrigger={false} sideOffset={6} className="z-50">
+                  <Select.Popup className="popover solid min-w-(--anchor-width) rounded-xl p-1 shadow-[0_10px_30px_var(--glass-shadow)]">
+                    <Select.List>
+                      {exam.units.map((u) => (
+                        <Select.Item key={u} value={u} className="row flex h-10 items-center justify-between gap-2 rounded-lg px-3 data-highlighted:bg-hover">
+                          <Select.ItemText>{u}</Select.ItemText>
+                          <Select.ItemIndicator><Check size={14} aria-hidden /></Select.ItemIndicator>
+                        </Select.Item>
+                      ))}
+                    </Select.List>
+                  </Select.Popup>
+                </Select.Positioner>
+              </Select.Portal>
+            </Select.Root>
           </div>
         </div>
         <div className="mt-[18px] flex flex-col gap-2">

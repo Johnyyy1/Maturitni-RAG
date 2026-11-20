@@ -19,6 +19,9 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="cs" suppressHydrationWarning className={`${GeistSans.variable} ${GeistMono.variable} antialiased`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: 'try { if (sessionStorage.getItem("studium-today")) document.documentElement.dataset.seenToday = ""; } catch {}' }} />
+      </head>
       <body>
         <a href="#obsah" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-full focus:bg-panel focus:px-4 focus:py-2">
           Přeskočit na obsah

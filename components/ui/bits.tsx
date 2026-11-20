@@ -3,6 +3,8 @@ import type { LucideIcon } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
+export { ProgressDots } from "./progress-dots";
+
 const chipTones = {
   neutral: "bg-hover text-muted",
   accent: "bg-soft text-accent",
@@ -25,7 +27,7 @@ export function Chip({
   children: ReactNode;
 }) {
   return (
-    <span className={cn("inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-[12px] font-semibold whitespace-nowrap", chipTones[tone], className)}>
+    <span className={cn("inline-flex transition-colors duration-(--dur-hover) ease-[ease] h-6 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-[12px] font-semibold whitespace-nowrap", chipTones[tone], className)}>
       {Icon && <Icon size={13} strokeWidth={2} aria-hidden />}
       {dot && <span className="size-1.5 rounded-full bg-current" aria-hidden />}
       {children}
@@ -39,7 +41,7 @@ export function CitationNumber({ n, active = true, size = 20 }: { n: number; act
     <span
       aria-hidden
       className={cn(
-        "tnum inline-flex shrink-0 items-center justify-center rounded-full font-semibold",
+        "tnum inline-flex transition-colors duration-(--dur-hover) ease-[ease] shrink-0 items-center justify-center rounded-full font-semibold",
         size === 20 ? "size-5 text-[11px]" : "size-4 text-[10px]",
         active ? "bg-accent text-on-accent" : "bg-strong text-fg",
       )}
@@ -94,26 +96,8 @@ export function Kbd({ children, className }: { children: ReactNode; className?: 
   );
 }
 
-/** ProgressSteps: 6px dots, the current one stretched to 20px. */
-export function ProgressDots({ total, current, results }: { total: number; current: number; results: ("ok" | "bad" | undefined)[] }) {
-  return (
-    <span className="flex items-center gap-1" role="img" aria-label={`Otázka ${current + 1} z ${total}`}>
-      {Array.from({ length: total }, (_, i) => (
-        <span
-          key={i}
-          className={cn(
-            "h-1.5 rounded-[3px]",
-            i === current ? "w-5" : "w-1.5",
-            results[i] === "ok" ? "bg-success" : results[i] === "bad" ? "bg-error" : i === current ? "bg-accent" : "bg-ring-strong",
-          )}
-        />
-      ))}
-    </span>
-  );
-}
-
 /** Thin progress track. */
-export function ProgressTrack({ value, className, fill = "bg-accent", track = "bg-ring-strong", label }: { value: number; className?: string; fill?: string; track?: string; label?: string }) {
+export function ProgressTrack({ value, className, fill = "bg-accent", track = "bg-ring-strong", label, animateFill }: { value: number; className?: string; fill?: string; track?: string; label?: string; animateFill?: boolean }) {
   return (
     <span
       role="progressbar"
@@ -123,7 +107,7 @@ export function ProgressTrack({ value, className, fill = "bg-accent", track = "b
       aria-valuenow={Math.round(value * 100)}
       className={cn("block overflow-hidden rounded-[3px]", track, className)}
     >
-      <span className={cn("block h-full rounded-[3px] transition-[width] duration-300 ease-(--ease-out)", fill)} style={{ width: `${value * 100}%` }} />
+      <span className={cn("block h-full rounded-[3px]", fill, animateFill && "today-fill")} style={{ width: `${value * 100}%` }} />
     </span>
   );
 }
@@ -132,11 +116,10 @@ export function ProgressTrack({ value, className, fill = "bg-accent", track = "b
 export function ScoreRing({ value, size = 56, label }: { value: number; size?: 52 | 56; label: string }) {
   const stroke = (size * (1 - 0.78)) / 2;
   const r = (size - stroke) / 2;
-  const c = 2 * Math.PI * r;
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} role="img" aria-label={label} className="shrink-0 -rotate-90">
       <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--hover)" strokeWidth={stroke} />
-      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--accent)" strokeWidth={stroke} strokeDasharray={`${c * value} ${c}`} />
+      <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--accent)" strokeWidth={stroke} pathLength={100} strokeDasharray={`${100 * value} 100`} className="ring-draw" />
     </svg>
   );
 }

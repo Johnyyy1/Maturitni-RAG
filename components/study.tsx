@@ -17,6 +17,7 @@ import {
   Quote,
   RotateCw,
   Sparkles,
+  Square,
   ThumbsDown,
   ThumbsUp,
   X,
@@ -24,7 +25,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { Fragment, useEffect, useRef, useState, type FormEvent } from "react";
+import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type FormEvent } from "react";
 import { Breadcrumb } from "@/components/question";
 import { CitationChip, CitationNumber } from "@/components/ui/bits";
 import { GlassButton, GlassIconButton } from "@/components/ui/buttons";
@@ -32,10 +33,12 @@ import { Segmented } from "@/components/ui/segmented";
 import { Sheet } from "@/components/ui/sheet";
 import { askTutor, TutorUnavailableError } from "@/lib/api";
 import { questionHref } from "@/lib/mock/questions";
+import { IconSwap } from "@/components/ui/icon-swap";
+import { inspector } from "@/lib/motion";
 import { cn } from "@/lib/cn";
 import type { Question, Source, TutorMessage } from "@/lib/types";
 
-type Msg = TutorMessage & { streaming?: boolean };
+type Msg = TutorMessage & { streaming?: boolean; chunks?: string[] };
 
 const suggestions: { label: string; icon: LucideIcon }[] = [
   { label: "Shrň to do tří bodů", icon: List },
@@ -50,49 +53,76 @@ export function StudyView({ question, initialThread }: { question: Question; ini
   const [sheetSource, setSheetSource] = useState<number | null>(null);
   const [unavailable, setUnavailable] = useState(false);
   const [draft, setDraft] = useState("");
+  const composer = useRef<HTMLTextAreaElement>(null);
+  const [composerHeight, setComposerHeight] = useState(56);
+  useLayoutEffect(() => {
+    const input = composer.current;
+    if (input) {
+      input.style.height = "auto";
+      const height = Math.min(96, Math.max(24, input.scrollHeight));
+      input.style.height = `${height}px`;
+      setComposerHeight(Math.max(56, height + 24));
+    }
+  }, [draft]);
   const busy = messages.some((m) => m.streaming);
   const abort = useRef<AbortController | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
   const lastQuestion = useRef("");
 
+  /** Opens a source: inspector on desktop, bottom sheet on mobile. */
+  const cite = useCallback((n: number) => {
+    if (!sources.some((source) => source.n === n)) return;
+    if (window.matchMedia("(min-width: 1024px)").matches) setOpenSource(n);
+    else setSheetSource(n);
+  }, [sources]);
+
   // Deep link from the question page: …/studium#zdroj-2.
   useEffect(() => {
-    const n = Number(window.location.hash.match(/^#zdroj-(\d+)$/)?.[1]);
-    if (n) cite(n);
-    return () => abort.current?.abort();
-  }, []);
+    const openFromHash = () => {
+      const n = Number(window.location.hash.match(/^#zdroj-(\d+)$/)?.[1]);
+      if (n) cite(n);
+    };
+    const frame = requestAnimationFrame(openFromHash);
+    window.addEventListener("hashchange", openFromHash);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("hashchange", openFromHash);
+    };
+  }, [cite]);
+  useEffect(() => () => abort.current?.abort(), []);
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ block: "end" });
   }, [messages.length, unavailable]);
 
-  /** Opens a source: inspector on desktop, bottom sheet on mobile. */
-  function cite(n: number) {
-    if (window.matchMedia("(min-width: 1024px)").matches) setOpenSource(n);
-    else setSheetSource(n);
-  }
 
   async function send(text: string) {
     const t = text.trim();
-    if (!t || busy) return;
+    if (!t || abort.current) return;
     lastQuestion.current = t;
     setDraft("");
     setUnavailable(false);
     setMessages((m) => [...m, { role: "student", text: t }, { role: "tutor", text: "", streaming: true }]);
-    abort.current = new AbortController();
+    const controller = new AbortController();
+    abort.current = controller;
     try {
-      for await (const token of askTutor(question, t, abort.current.signal)) {
-        setMessages((m) => m.map((msg, i) => (i === m.length - 1 ? { ...msg, text: msg.text + token } : msg)));
+      for await (const token of askTutor(question, t, controller.signal)) {
+        setMessages((m) => m.map((msg, i) => (i === m.length - 1 ? { ...msg, text: msg.text + token, chunks: [...(msg.chunks ?? []), token] } : msg)));
       }
       setMessages((m) =>
         m.map((msg, i) => (i === m.length - 1 ? { ...msg, streaming: false, citations: citedIn(msg.text) } : msg)),
       );
     } catch (e) {
-      if (abort.current?.signal.aborted) return;
+      if (controller.signal.aborted) {
+        setMessages((m) => m.flatMap((msg, i) => i !== m.length - 1 ? [msg] : msg.text ? [{ ...msg, streaming: false, citations: citedIn(msg.text) }] : []));
+        return;
+      }
       // Drop the empty answer; keep the student's question.
       setMessages((m) => m.slice(0, -1));
       if (e instanceof TutorUnavailableError) setUnavailable(true);
       else throw e;
+    } finally {
+      abort.current = null;
     }
   }
 
@@ -108,9 +138,9 @@ export function StudyView({ question, initialThread }: { question: Question; ini
 
   return (
     <div className="flex gap-3 lg:h-dvh lg:py-2.5 lg:pr-2.5 lg:pl-3">
-      <section aria-label="Konverzace s tutorem" className="relative flex min-w-0 flex-1 flex-col lg:surface lg:overflow-hidden lg:rounded-[22px]">
+      <section aria-label="Konverzace s tutorem" className="thread-scope relative flex min-w-0 flex-1 flex-col lg:surface lg:overflow-hidden lg:rounded-[22px]">
         {/* Floating bar */}
-        <div className="sticky top-0 z-20 flex h-11 items-center gap-2 px-4 pt-3 lg:absolute lg:inset-x-4 lg:top-3.5 lg:h-10 lg:px-0 lg:pt-0">
+        <div className="scroll-lift sticky top-0 z-20 flex h-11 items-center gap-2 px-4 pt-3 lg:absolute lg:inset-x-4 lg:top-3.5 lg:h-10 lg:px-0 lg:pt-0">
           <span className="hidden lg:contents">
             <Breadcrumb back={questionHref(question)} items={[{ label: question.trail[0] }, { label: `Otázka ${question.id}` }]} />
           </span>
@@ -132,7 +162,7 @@ export function StudyView({ question, initialThread }: { question: Question; ini
         </div>
 
         {/* Thread */}
-        <div className="flex-1 lg:overflow-y-auto">
+        <div className="thread-scroller flex-1 lg:overflow-y-auto">
           <div className="mx-auto flex w-full max-w-[620px] flex-col gap-7 px-4 pt-6 pb-48 lg:px-0 lg:pt-[96px] lg:pb-40">
             <header className="flex flex-col gap-2">
               <p className="text-[13px] font-medium text-muted">{question.context}</p>
@@ -183,28 +213,40 @@ export function StudyView({ question, initialThread }: { question: Question; ini
             <div aria-hidden className="pointer-events-none fixed inset-x-0 bottom-0 z-10 h-[220px] bg-linear-to-b from-transparent to-(--bg-d) to-60% lg:absolute lg:h-[140px] lg:to-(--surface)" />
             <form
               onSubmit={onSubmit}
-              className="glass fixed inset-x-4 bottom-[94px] z-20 mx-auto flex h-14 max-w-[620px] items-center gap-2 rounded-full px-2 [--g-blur:24px] [--g-b:30px] lg:absolute lg:bottom-7"
+              style={{ height: composerHeight }}
+              className="composer scroll-lift glass fixed inset-x-4 bottom-[94px] z-20 mx-auto flex max-w-[620px] items-center gap-2 rounded-full px-2 [--g-blur:24px] [--g-b:30px] lg:absolute lg:bottom-7"
             >
               <GlassIconButton icon={Plus} label="Přidat přílohu" variant="plain" aria-disabled className="text-muted" />
               <label htmlFor="dotaz" className="sr-only">
                 Dotaz pro tutora
               </label>
-              <input
+              <textarea
+                ref={composer}
+                rows={1}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                    e.preventDefault();
+                    e.currentTarget.form?.requestSubmit();
+                  }
+                }}
                 id="dotaz"
                 value={draft}
                 onChange={(e) => setDraft(e.target.value)}
                 placeholder="Zeptej se k této otázce…"
                 autoComplete="off"
-                className="h-full min-w-0 flex-1 bg-transparent text-[15px] text-fg outline-none placeholder:text-muted"
+                className="min-w-0 flex-1 resize-none rounded-sm bg-transparent text-[15px] leading-6 text-fg outline-none placeholder:text-muted"
               />
               <GlassIconButton icon={Mic} label="Diktovat" variant="plain" aria-disabled className="text-muted" />
               <button
-                type="submit"
-                aria-label="Odeslat"
-                disabled={busy || !draft.trim()}
+                type={busy ? "button" : "submit"}
+                aria-label={busy ? "Zastavit odpověď" : "Odeslat"}
+                onClick={busy ? () => abort.current?.abort() : undefined}
+                disabled={!busy && !draft.trim()}
                 className="press ink flex size-10 shrink-0 items-center justify-center rounded-full disabled:opacity-100"
               >
-                <ArrowUp size={18} strokeWidth={2} aria-hidden />
+                <IconSwap state={busy ? "stop" : "send"}>
+                  {busy ? <Square size={16} strokeWidth={2} aria-hidden /> : <ArrowUp size={18} strokeWidth={2} aria-hidden />}
+                </IconSwap>
               </button>
             </form>
           </>
@@ -250,7 +292,7 @@ function CitedText({ text, onCite }: { text: string; onCite: (n: number) => void
   );
 }
 
-function TutorAnswer({
+const TutorAnswer = memo(function TutorAnswer({
   msg,
   sources,
   openSource,
@@ -266,6 +308,16 @@ function TutorAnswer({
   const [copied, setCopied] = useState(false);
   const [vote, setVote] = useState<"up" | "down" | null>(null);
   const paragraphs = msg.text.split("\n\n");
+  const streamParagraphs = (msg.chunks ?? []).reduce<string[][]>((groups, chunk) => {
+    const [line, ...rest] = chunk.split("\n\n");
+    groups[groups.length - 1].push(line);
+    for (const next of rest) groups.push(next ? [next] : []);
+    return groups;
+  }, [[]]);
+  const sentenceEnd = [...msg.text.matchAll(/[.!?](?:\s+\[\d+\])?(?=\s)/g)].at(-1);
+  const citations = msg.streaming
+    ? citedIn(sentenceEnd ? msg.text.slice(0, sentenceEnd.index + sentenceEnd[0].length) : "")
+    : msg.citations ?? [];
 
   return (
     <article aria-label="Odpověď tutora" aria-busy={msg.streaming} className="flex flex-col gap-3.5">
@@ -278,8 +330,14 @@ function TutorAnswer({
       </div>
       {msg.text === "" && msg.streaming ? (
         <p className="text-[16px] text-muted">
-          <span className="animate-pulse">Hledám v podkladech…</span>
+          Hledám v podkladech…
         </p>
+      ) : msg.streaming ? (
+        streamParagraphs.filter((group) => group.length).map((group, i) => (
+          <p key={i} className="text-[16px] leading-[1.6] whitespace-pre-line">
+            {group.map((chunk, j) => <span key={j} className="stream-in">{chunk}</span>)}
+          </p>
+        ))
       ) : (
         paragraphs.map((p, i) => (
           <p key={i} className="text-[16px] leading-[1.6] whitespace-pre-line">
@@ -287,14 +345,15 @@ function TutorAnswer({
           </p>
         ))
       )}
-      {!msg.streaming && !!msg.citations?.length && (
-        <>
-          <div className="flex flex-wrap gap-2">
-            {msg.citations.map((n) => {
-              const s = sources.find((x) => x.n === n);
-              return s && <CitationChip key={n} n={n} label={s.chip} active={openSource === n} onClick={() => onCite(n)} />;
-            })}
-          </div>
+      {citations.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {citations.map((n) => {
+            const source = sources.find((x) => x.n === n);
+            return source && <CitationChip className={msg.chunks || msg.streaming ? "citation-enter" : undefined} key={n} n={n} label={source.chip} active={openSource === n} onClick={() => onCite(n)} />;
+          })}
+        </div>
+      )}
+      {!msg.streaming && citations.length > 0 && (
           <div className="flex gap-1 text-muted">
             <SmallAction
               label={copied ? "Zkopírováno" : "Kopírovat"}
@@ -311,11 +370,10 @@ function TutorAnswer({
               <Network size={16} strokeWidth={1.5} aria-hidden />
             </Link>
           </div>
-        </>
       )}
     </article>
   );
-}
+});
 
 function SmallAction({ label, icon: Icon, onClick, pressed }: { label: string; icon: LucideIcon; onClick: () => void; pressed?: boolean }) {
   return (
@@ -327,7 +385,9 @@ function SmallAction({ label, icon: Icon, onClick, pressed }: { label: string; i
       aria-pressed={pressed}
       className={cn("hit press flex size-8 items-center justify-center rounded-full hover:bg-hover hover:text-fg", pressed && "text-accent")}
     >
-      <Icon size={16} strokeWidth={1.5} fill={pressed ? "currentColor" : "none"} fillOpacity={pressed ? 0.15 : 0} aria-hidden />
+      <IconSwap state={label}>
+        <Icon size={16} strokeWidth={1.5} fill={pressed ? "currentColor" : "none"} fillOpacity={pressed ? 0.15 : 0} aria-hidden />
+      </IconSwap>
     </button>
   );
 }
@@ -361,10 +421,9 @@ function SourceInspector({ source, onClose, mapHref }: { source: Source; onClose
   return (
     <motion.aside
       aria-label="Zdroj"
-      initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.98, filter: "blur(8px)" }}
-      animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-      exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.98, filter: "blur(8px)" }}
-      transition={{ type: "spring", bounce: 0, duration: 0.35 }}
+      {...inspector}
+      initial={reduce ? { opacity: 0 } : inspector.initial}
+      exit={reduce ? { opacity: 0, transition: inspector.exit.transition } : inspector.exit}
       className="glass-thick hidden w-[344px] shrink-0 flex-col rounded-[22px] pt-3.5 pr-3.5 pb-5 pl-5 lg:flex"
     >
       <SourceBody source={source} onClose={onClose} mapHref={mapHref} />
@@ -392,7 +451,7 @@ function SourceBody({ source, onClose, mapHref }: { source: Source; onClose: () 
         <h2 className="text-[22px] font-semibold tracking-[-0.5px]">{source.title}</h2>
         <p className="text-[13px] text-muted">{source.meta}</p>
         <p className="mt-[18px] text-[14px] leading-[1.6] text-muted">{source.before}</p>
-        <div ref={passage} className="raised mt-3 flex flex-col gap-2 rounded-[14px] px-4 py-3.5">
+        <div ref={passage} className="flash-soft raised mt-3 flex flex-col gap-2 rounded-[14px] px-4 py-3.5">
           <p className="flex items-center gap-1.5 text-[12px] font-semibold text-accent">
             <Quote size={14} strokeWidth={2} aria-hidden />
             Použito v odpovědi

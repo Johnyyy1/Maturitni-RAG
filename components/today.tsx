@@ -35,7 +35,7 @@ export function HeroDesktop() {
             <span className="tnum text-[12px] font-semibold">
               {c.stepsDone} z {c.stepsTotal} kroků
             </span>
-            <ProgressTrack value={c.stepsDone / c.stepsTotal} className="h-1 w-[120px]" track="bg-white/20" fill="bg-white" label="Postup tématem" />
+            <ProgressTrack value={c.stepsDone / c.stepsTotal} className="h-1 w-[120px]" track="bg-white/20" fill="bg-white" label="Postup tématem" animateFill />
           </div>
         </div>
       </div>
@@ -58,10 +58,10 @@ function HeroGraph() {
         ))}
         <rect x={0} y={220} width={470} height={1} fill="#FFFFFF40" />
         <rect x={240} y={0} width={1} height={280} fill="#FFFFFF40" />
-        <path d="M100 -10q140 460 280 0" fill="none" stroke="#fff" strokeWidth={2.5} strokeLinecap="round" />
-        <circle cx={240} cy={220} r={4.5} fill="#fff" stroke="var(--hero-a)" strokeWidth={3} />
+        <path className="today-draw [--d:70ms]" pathLength={1} strokeDasharray="1 1" strokeDashoffset={0} d="M100 -10q140 460 280 0" fill="none" stroke="#fff" strokeWidth={2.5} strokeLinecap="round" />
+        <circle className="today-materialize [--d:670ms] origin-center [transform-box:fill-box]" cx={240} cy={220} r={4.5} fill="#fff" stroke="var(--hero-a)" strokeWidth={3} />
       </svg>
-      <span className="glass-thin glass-on-hero absolute top-[150px] left-[262px] flex h-9 items-center gap-2 rounded-full px-3.5 [--g-y:6px] [--g-b:18px]">
+      <span className="today-materialize glass-thin glass-on-hero absolute [--d:670ms] top-[150px] left-[262px] flex h-9 items-center gap-2 rounded-full px-3.5 [--g-y:6px] [--g-b:18px]">
         <span className="text-[12px] font-medium text-white/70">Vrchol</span>
         <span className="text-[13px] font-semibold text-white">{c.vertex}</span>
       </span>
@@ -79,7 +79,7 @@ export function HeroMobile() {
       </span>
       <h2 className="mt-3.5 text-[26px] font-semibold tracking-[-0.6px]">{c.title}</h2>
       <p className="tnum mt-1 text-[13px] font-medium text-white/72">{c.mobileMeta}</p>
-      <ProgressTrack value={c.stepsDone / c.stepsTotal} className="mt-3.5 h-[5px] w-full" track="bg-white/20" fill="bg-white" label="Postup tématem" />
+      <ProgressTrack value={c.stepsDone / c.stepsTotal} className="mt-3.5 h-[5px] w-full" track="bg-white/20" fill="bg-white" label="Postup tématem" animateFill />
       <PrimaryPill href={c.href} tone="light" arrow size={48} full className="mt-[18px] text-[15px]">
         Pokračovat
       </PrimaryPill>
@@ -94,7 +94,7 @@ export function DueList() {
       {dueItems.map((item, i) => (
         <li key={item.title}>
           {i > 0 && <span aria-hidden className="ml-[50px] block h-px bg-border lg:hidden" />}
-          <Link href={item.href} className="group flex h-[62px] items-center gap-3.5 px-4 lg:h-[60px] lg:rounded-[14px] lg:px-3 lg:hover:bg-hover">
+          <Link href={item.href} className="row group flex h-[62px] items-center gap-3.5 px-4 lg:h-[60px] lg:rounded-[14px] lg:px-3 lg:hover:bg-hover">
             <DataIcon name={item.icon} size={20} className="size-5 text-muted lg:size-[18px]" />
             <span className="flex flex-1 flex-col gap-0.5">
               <span className="text-[16px] font-medium lg:text-[14px]">{item.title}</span>
@@ -105,7 +105,7 @@ export function DueList() {
               </span>
             </span>
             <span className="hidden text-[13px] font-medium text-muted group-hover:text-fg lg:inline">{item.action}</span>
-            <ChevronRight size={16} strokeWidth={1.5} className="text-strong lg:text-muted" aria-hidden />
+            <ChevronRight size={16} strokeWidth={1.5} className="nudge text-strong lg:text-muted" aria-hidden />
           </Link>
         </li>
       ))}
@@ -127,7 +127,7 @@ export function SubjectsCard({ className }: { className?: string }) {
       <ul className="flex flex-col">
         {subjects.map((s) => (
           <li key={s.slug}>
-            <Link href={`/predmety/${s.slug}/otazky/${s.firstQuestion}`} className="flex flex-col gap-2.5 rounded-[14px] p-3 hover:bg-hover">
+            <Link href={`/predmety/${s.slug}/otazky/${s.firstQuestion}`} className="row flex flex-col gap-2.5 rounded-[14px] p-3 hover:bg-hover">
               <span className="flex items-center gap-3">
                 <DataIcon name={s.icon} size={18} className="text-muted" />
                 <span className="flex flex-1 flex-col gap-0.5">
@@ -157,12 +157,12 @@ export function WeekCard({ className }: { className?: string }) {
       </div>
       <div className="min-h-6 flex-1" />
       <ul aria-label="Čas studia po dnech" className="flex h-[170px] items-end gap-2 px-3 pb-3">
-        {week.days.map((d) => (
+        {week.days.map((d, i) => (
           <li key={d.label} className="flex h-full flex-1 flex-col items-center justify-end gap-2">
             <span
               aria-hidden
-              className={cn("w-full rounded-md", d.today ? "bg-accent" : d.minutes ? "bg-strong" : "bg-hover")}
-              style={{ height: d.minutes ? Math.round((d.minutes / max) * 112) : 4 }}
+              className={cn("today-bar w-full rounded-md", d.today ? "bg-accent" : d.minutes ? "bg-strong" : "bg-hover")}
+              style={{ height: d.minutes ? Math.round((d.minutes / max) * 112) : 4, "--d": `${[140, 153, 165, 176, 186, 194, 200][i]}ms` } as React.CSSProperties}
             />
             <span className={cn("text-[11px] font-medium", d.today ? "text-fg" : "text-muted")}>
               {d.label}
@@ -180,7 +180,7 @@ export function MobileSubjects() {
     <ul className="grid grid-cols-2 gap-2.5">
       {subjects.map((s) => (
         <li key={s.slug}>
-          <Link href={`/predmety/${s.slug}/otazky/${s.firstQuestion}`} className="surface flex h-[120px] flex-col gap-1.5 rounded-[22px] p-4">
+          <Link href={`/predmety/${s.slug}/otazky/${s.firstQuestion}`} className="card-link surface flex h-[120px] flex-col gap-1.5 rounded-[22px] p-4">
             <DataIcon name={s.icon} size={20} className="text-accent" />
             <span className="flex-1" />
             <span className="text-[16px] font-semibold">{s.name}</span>

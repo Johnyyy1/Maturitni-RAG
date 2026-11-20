@@ -1,26 +1,34 @@
 "use client";
 
 import { ArrowRight, ChevronLeft, Eye, List, Maximize2, Minus, Network, Plus, X, Zap } from "lucide-react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { animate, AnimatePresence, motion, useDragControls, useMotionValue, useReducedMotion } from "motion/react";
 import Link from "next/link";
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { CitationChip, Chip } from "@/components/ui/bits";
 import { GlassButton, GlassIconButton, PrimaryPill } from "@/components/ui/buttons";
 import { Segmented } from "@/components/ui/segmented";
 import { Sheet } from "@/components/ui/sheet";
 import { questionHref } from "@/lib/mock/questions";
+import { inspector, spring } from "@/lib/motion";
 import { cn } from "@/lib/cn";
 import type { ConceptNode, Question } from "@/lib/types";
 
 const W = 812;
 const H = 880;
 
-export function ConceptMap({ question, nodes, edgesPath }: { question: Question; nodes: ConceptNode[]; edgesPath: string }) {
+export function ConceptMap({ question, nodes, edges }: { question: Question; nodes: ConceptNode[]; edges: Record<string, string> }) {
   const [selected, setSelected] = useState<string | null>("atentat");
   const [sheet, setSheet] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
   const [list, setList] = useState(false);
   const canvas = useRef<HTMLDivElement>(null);
+  const scale = useMotionValue(1);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const drag = useDragControls();
+  const moved = useRef(false);
+  const pinch = useRef<{ distance: number; zoom: number } | null>(null);
+  const reduce = useReducedMotion();
   const node = nodes.find((n) => n.id === selected);
   const studyHref = questionHref(question, "studium");
 
@@ -31,11 +39,39 @@ export function ConceptMap({ question, nodes, edgesPath }: { question: Question;
 
   const fit = () => {
     const el = canvas.current;
-    if (el) setZoom(Math.min(1, Math.floor(Math.min(el.clientWidth / W, el.clientHeight / H) * 20) / 20));
+    if (el?.clientWidth) {
+      x.jump(0);
+      y.jump(0);
+      setZoom(Math.max(0.3, Math.min(1, Math.floor(Math.min(el.clientWidth / W, el.clientHeight / H) * 20) / 20)));
+    }
   };
 
   // Start fitted when the canvas is smaller than the drawing.
-  useLayoutEffect(fit, []);
+  useLayoutEffect(fit, [x, y]);
+
+  useEffect(() => {
+    if (reduce) scale.jump(zoom);
+    else {
+      const animation = animate(scale, zoom, spring);
+      return () => animation.stop();
+    }
+  }, [zoom, scale, reduce]);
+
+  useEffect(() => {
+    const el = canvas.current;
+    if (!el || list) return;
+    const wheel = (e: WheelEvent) => {
+      e.preventDefault();
+      setZoom((z) => Math.max(0.3, Math.min(2, z * Math.exp(-e.deltaY * 0.002))));
+    };
+    el.addEventListener("wheel", wheel, { passive: false });
+    return () => el.removeEventListener("wheel", wheel);
+  }, [list]);
+
+  const path = new Set<string>();
+  for (let current = node; current?.parent && !path.has(current.id); current = nodes.find((n) => n.id === current?.parent)) {
+    path.add(current.id);
+  }
 
   return (
     <div className="flex gap-3 lg:h-dvh lg:py-2.5 lg:pr-2.5 lg:pl-3">
@@ -73,8 +109,8 @@ export function ConceptMap({ question, nodes, edgesPath }: { question: Question;
           </div>
           <div className="flex-1" />
           <div role="group" aria-label="Přiblížení" className="glass-thin flex h-10 items-center rounded-full px-1">
-            <GlassIconButton icon={Minus} label="Oddálit" size={32} iconSize={15} variant="plain" onClick={() => setZoom((z) => Math.max(0.5, +(z - 0.1).toFixed(2)))} />
-            <button type="button" onClick={() => setZoom(1)} aria-label="Obnovit přiblížení" className="tnum h-8 w-14 rounded-full text-[13px] font-semibold hover:bg-ring">
+            <GlassIconButton icon={Minus} label="Oddálit" size={32} iconSize={15} variant="plain" onClick={() => setZoom((z) => Math.max(0.3, +(z - 0.1).toFixed(2)))} />
+            <button type="button" onClick={() => { x.jump(0); y.jump(0); setZoom(1); }} aria-label="Obnovit přiblížení" className="tnum h-8 w-14 rounded-full text-[13px] font-semibold hover:bg-ring">
               {Math.round(zoom * 100)} %
             </button>
             <GlassIconButton icon={Plus} label="Přiblížit" size={32} iconSize={15} variant="plain" onClick={() => setZoom((z) => Math.min(2, +(z + 0.1).toFixed(2)))} />
@@ -93,22 +129,66 @@ export function ConceptMap({ question, nodes, edgesPath }: { question: Question;
             </div>
           </div>
         ) : (
-          <div ref={canvas} className="absolute inset-0">
-            <div
-              className="absolute top-0 left-1/2 transition-transform duration-200 ease-(--ease-out)"
-              style={{ width: W, height: H, transform: `translateX(-50%) scale(${zoom})`, transformOrigin: "50% 40%" }}
+          <div
+            ref={canvas}
+            className="absolute inset-0 cursor-grab touch-none [contain:paint] active:cursor-grabbing"
+            onPointerDown={(e) => {
+              if (!e.isPrimary) return;
+              moved.current = false;
+              drag.start(e, { distanceThreshold: 10 });
+            }}
+            onTouchStart={(e) => {
+              if (e.touches.length !== 2) return;
+              const [a, b] = Array.from(e.touches);
+              drag.cancel();
+              moved.current = true;
+              scale.stop();
+              x.stop();
+              y.stop();
+              pinch.current = { distance: Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY), zoom: scale.get() };
+            }}
+            onTouchMove={(e) => {
+              if (!pinch.current?.distance || e.touches.length !== 2) return;
+              const [a, b] = Array.from(e.touches);
+              const distance = Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
+              scale.jump(Math.max(0.3, Math.min(2, pinch.current.zoom * distance / pinch.current.distance)));
+            }}
+            onTouchEnd={() => {
+              if (!pinch.current) return;
+              pinch.current = null;
+              setZoom(scale.get());
+            }}
+            onTouchCancel={() => {
+              pinch.current = null;
+              setZoom(scale.get());
+            }}
+            onClickCapture={(e) => { if (moved.current && e.detail > 0) e.stopPropagation(); }}
+          >
+            <motion.div
+              drag
+              dragControls={drag}
+              dragListener={false}
+              dragMomentum={!reduce}
+              dragConstraints={canvas}
+              onDragStart={() => { moved.current = true; }}
+              className="absolute top-0 left-1/2 -translate-x-1/2"
+              style={{ x, y, width: W, height: H }}
             >
-              <svg aria-hidden width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="absolute top-[90px] left-0">
-                <path d={edgesPath} fill="none" stroke="var(--axis)" strokeWidth={1.5} strokeLinecap="round" />
-              </svg>
-              <ul aria-label="Pojmy">
-                {nodes.map((n) => (
-                  <li key={n.id} className="absolute" style={{ left: n.x, top: n.y }}>
-                    <MapNode node={n} active={selected === n.id} onSelect={() => select(n.id)} />
-                  </li>
-                ))}
-              </ul>
-            </div>
+              <motion.div style={{ scale, transformOrigin: "50% 40%" }} className="size-full">
+                <svg aria-hidden width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="pointer-events-none absolute top-[90px] left-0">
+                  {Object.entries(edges).map(([id, d]) => (
+                    <path key={id} d={d} fill="none" stroke={path.has(id) ? "var(--accent)" : "var(--axis)"} strokeWidth={1.5} strokeLinecap="round" className="map-edge" />
+                  ))}
+                </svg>
+                <ul aria-label="Pojmy">
+                  {nodes.map((n) => (
+                    <li key={n.id} className="absolute" style={{ left: n.x, top: n.y }}>
+                      <MapNode node={n} active={selected === n.id} onSelect={() => select(n.id)} />
+                    </li>
+                  ))}
+                </ul>
+              </motion.div>
+            </motion.div>
           </div>
         )}
 
@@ -142,7 +222,7 @@ function MapNode({ node, active, onSelect }: { node: ConceptNode; active: boolea
       className={cn(
         "press flex items-center gap-2 rounded-full whitespace-nowrap shadow-[0_2px_8px_var(--glass-shadow)]",
         node.root ? "h-12 bg-fg px-[22px] text-[16px] font-semibold text-on-fg" : "h-10 px-4 text-[14px]",
-        !node.root && !active && "bg-panel font-medium shadow-[inset_0_0_0_1px_var(--ring-strong),0_2px_8px_var(--glass-shadow)] hover:bg-hover",
+        !node.root && !active && "bg-panel font-medium shadow-[inset_0_0_0_1px_var(--ring-strong),0_2px_8px_var(--glass-shadow)] hover:shadow-[inset_0_0_0_1px_var(--accent),0_2px_8px_var(--glass-shadow)]",
         !node.root && active && "bg-soft font-semibold text-accent shadow-[inset_0_0_0_1.5px_var(--accent),0_2px_8px_var(--glass-shadow)]",
       )}
     >
@@ -164,7 +244,7 @@ function RelationList({ nodes, selected, onSelect }: { nodes: ConceptNode[]; sel
             onClick={() => onSelect(n.id)}
             aria-current={selected === n.id ? "true" : undefined}
             className={cn(
-              "flex h-11 w-full items-center gap-2 rounded-xl px-3 text-left text-[15px] hover:bg-hover",
+              "row flex h-11 w-full items-center gap-2 rounded-xl px-3 text-left text-[15px] hover:bg-hover",
               depth === 0 ? "font-semibold" : "font-medium",
               selected === n.id && "bg-soft text-accent",
             )}
@@ -186,10 +266,9 @@ function Inspector(props: { node: ConceptNode; nodes: ConceptNode[]; studyHref: 
   return (
     <motion.aside
       aria-label="Vybraný pojem"
-      initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.98, filter: "blur(8px)" }}
-      animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-      exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.98, filter: "blur(8px)" }}
-      transition={{ type: "spring", bounce: 0, duration: 0.35 }}
+      {...inspector}
+      initial={reduce ? { opacity: 0 } : inspector.initial}
+      exit={reduce ? { opacity: 0, transition: inspector.exit.transition } : inspector.exit}
       className="glass-thick hidden w-[344px] shrink-0 flex-col overflow-y-auto rounded-[22px] pt-3.5 pr-3.5 pb-5 pl-5 lg:flex"
     >
       <NodeDetail {...props} />

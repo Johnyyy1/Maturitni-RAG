@@ -1,19 +1,20 @@
 import Link from "next/link";
-import { ArrowRight, type LucideIcon } from "lucide-react";
+import { ArrowRight, ChevronLeft, type LucideIcon } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 type ActionProps = {
   href?: string;
+  transitionTypes?: string[];
   className?: string;
   children: ReactNode;
 } & Omit<ComponentProps<"button">, "className" | "children">;
 
 /** Renders a Link for navigation and a button for actions. */
-function Action({ href, className, children, type = "button", ...rest }: ActionProps) {
+function Action({ href, className, children, type = "button", transitionTypes, ...rest }: ActionProps) {
   if (href) {
     return (
-      <Link href={href} className={className} {...(rest as Omit<ComponentProps<"a">, "href">)}>
+      <Link href={href} transitionTypes={transitionTypes} className={className} {...(rest as Omit<ComponentProps<"a">, "href">)}>
         {children}
       </Link>
     );
@@ -43,7 +44,7 @@ export function PrimaryPill({ size = 40, arrow, tone = "ink", full, className, c
     <Action
       {...rest}
       className={cn(
-        "press inline-flex shrink-0 items-center gap-2 rounded-full text-[14px] font-medium tracking-[-0.1px] whitespace-nowrap disabled:opacity-50",
+        "hit press inline-flex shrink-0 items-center gap-2 rounded-full text-[14px] font-medium tracking-[-0.1px] whitespace-nowrap disabled:opacity-50",
         pillHeights[size],
         arrow ? "pr-4 pl-[18px]" : pillPadding[size],
         tone === "ink" ? "ink" : "bg-white text-[#14182B] shadow-[inset_0_1px_0_#ffffff33,0_4px_12px_var(--glass-shadow)]",
@@ -52,7 +53,7 @@ export function PrimaryPill({ size = 40, arrow, tone = "ink", full, className, c
       )}
     >
       {children}
-      {arrow && <ArrowRight size={16} strokeWidth={2} aria-hidden />}
+      {arrow && <ArrowRight className="nudge" size={16} strokeWidth={2} aria-hidden />}
     </Action>
   );
 }
@@ -71,7 +72,7 @@ export function GlassButton({ icon: Icon, size = 40, variant = "glass", full, cl
     <Action
       {...rest}
       className={cn(
-        "press inline-flex shrink-0 items-center gap-2 rounded-full pr-4 pl-3.5 text-[14px] font-medium tracking-[-0.1px] whitespace-nowrap",
+        "hit press inline-flex shrink-0 items-center gap-2 rounded-full pr-4 pl-3.5 text-[14px] font-medium tracking-[-0.1px] whitespace-nowrap",
         size === 40 ? "h-10" : "h-11",
         variant === "glass" && "glass-thin text-fg",
         variant === "solid" && "solid text-fg",
@@ -101,12 +102,13 @@ export function GlassIconButton({ icon: Icon, label, size = 40, iconSize = 18, v
   return (
     <Action
       {...rest}
+      transitionTypes={Icon === ChevronLeft ? ["nav-back"] : undefined}
       aria-label={label}
       title={label}
       className={cn(
         "press inline-flex shrink-0 items-center justify-center rounded-full text-fg",
         iconBox[size],
-        size < 40 && "hit",
+        size < 44 && "hit",
         variant === "glass" ? "glass-thin" : "hover:bg-ring",
         className,
       )}

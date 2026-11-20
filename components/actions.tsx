@@ -1,6 +1,7 @@
 "use client";
 
 import { Bookmark, Check, Flag } from "lucide-react";
+import { toast } from "sonner";
 import { useState } from "react";
 import { GlassButton } from "@/components/ui/buttons";
 import { cn } from "@/lib/cn";
@@ -14,7 +15,10 @@ export function BookmarkButton({ size = 40, bare }: { size?: 36 | 40 | 44; bare?
       aria-pressed={saved}
       aria-label={saved ? "Odebrat z uložených" : "Uložit otázku"}
       title={saved ? "Uloženo" : "Uložit"}
-      onClick={() => setSaved((s) => !s)}
+      onClick={() => {
+        if (!saved) toast.success("Uloženo");
+        setSaved(!saved);
+      }}
       className={cn(
         "press inline-flex shrink-0 items-center justify-center rounded-full",
         size === 36 ? "size-9" : size === 40 ? "size-10" : "size-11",

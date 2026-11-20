@@ -7,6 +7,7 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Kbd } from "@/components/ui/bits";
 import { getSubject } from "@/lib/mock/subjects";
 import { questionHref, questions } from "@/lib/mock/questions";
+import { dur, ease } from "@/lib/motion";
 import { cn } from "@/lib/cn";
 
 type Entry = { label: string; hint: string; href: string; icon: LucideIcon; group: "Otázky" | "Stránky" };
@@ -71,10 +72,10 @@ export function CommandMenu({ open, instant, onClose }: { open: boolean; instant
       <AnimatePresence onExitComplete={() => ref.current?.close()}>
         {open && (
           <motion.div
-            initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.98, filter: "blur(6px)" }}
-            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-            exit={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.98, filter: "blur(6px)" }}
-            transition={{ duration: instant ? 0 : 0.2, ease: [0.23, 1, 0.32, 1] }}
+            initial={instant ? false : reduce ? { opacity: 0 } : { opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, transition: { duration: 0 } }}
+            transition={{ duration: instant ? 0 : dur.exit, ease: ease.out }}
             style={{ transformOrigin: "50% 0%" }}
             className="glass-thick mx-auto mt-[12vh] w-[min(560px,calc(100%-32px))] overflow-hidden rounded-[22px]"
           >
@@ -90,7 +91,7 @@ export function CommandMenu({ open, instant, onClose }: { open: boolean; instant
                 onKeyDown={(e) => {
                   if (e.key === "ArrowDown") {
                     e.preventDefault();
-                    setActive((i) => Math.min(i + 1, results.length - 1));
+                    setActive((i) => Math.min(i + 1, Math.max(0, results.length - 1)));
                   } else if (e.key === "ArrowUp") {
                     e.preventDefault();
                     setActive((i) => Math.max(i - 1, 0));

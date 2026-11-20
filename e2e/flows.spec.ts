@@ -97,3 +97,26 @@ test("mobil: citace otevře bottom sheet @mobile", async ({ page }) => {
   await page.keyboard.press("Escape");
   await expect(sheet).toBeHidden();
 });
+
+test("Dnes přehraje vstup jen při první návštěvě relace", async ({ page }) => {
+  await open(page, "/");
+  const heading = page.locator("header.today-enter").filter({ has: page.getByRole("heading", { level: 1 }) });
+  await expect(heading).toHaveCSS("animation-name", "rise-in");
+  await page.reload();
+  await expect(heading).toHaveCSS("animation-name", "none");
+});
+
+test("mobil: kartičku lze po odhalení ohodnotit tažením @mobile", async ({ page, context }) => {
+  await open(page, "/karticky");
+  await page.getByRole("button", { name: "Otočit kartičku" }).tap();
+  const question = page.getByRole("heading", { level: 1 });
+  const bounds = (await question.boundingBox())!;
+  const y = Math.round(bounds.y + bounds.height / 2);
+  const client = await context.newCDPSession(page);
+  await client.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: 85, y }] });
+  for (const x of [110, 150, 195, 235, 280]) {
+    await client.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x, y }] });
+  }
+  await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  await expect(page.getByText("2 z 6")).toBeVisible();
+});

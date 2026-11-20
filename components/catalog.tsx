@@ -1,6 +1,9 @@
 "use client";
 
 import { BadgeCheck, Check, KeyRound, LockOpen, School, SearchX, X } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
+import { toast } from "sonner";
+import { dur, ease, springIcon } from "@/lib/motion";
 import { useState, type CSSProperties } from "react";
 import { DataIcon } from "@/components/icon";
 import { TopBar } from "@/components/shell/app-shell";
@@ -25,6 +28,8 @@ export function Catalog() {
   const [filter, setFilter] = useState<PackageFilter>("vse");
   const [added, setAdded] = useState<Record<string, boolean>>({});
   const results = searchPackages(query, filter);
+  const reduce = useReducedMotion();
+  const move = !reduce && searchPackages("", "vse").length <= 30;
   const codeButton = (
     <GlassButton icon={KeyRound} variant="solid" aria-disabled title="Zadání kódu připravujeme">
       Zadat kód
@@ -50,15 +55,23 @@ export function Catalog() {
         <p className="text-[16px] text-muted lg:text-[17px]">Vyber si balíček a přidej si jeho předměty do přípravy.</p>
       </header>
 
-      {results.length ? (
-        <ul className="mt-8 grid gap-3.5 md:grid-cols-2">
+      <ul className={results.length ? "relative mt-8 grid gap-3.5 md:grid-cols-2" : "relative"}>
+        <AnimatePresence initial={false} mode="popLayout">
           {results.map((p) => (
-            <li key={p.id}>
-              <PackageCard pkg={p} added={added[p.id] ?? p.added} onAdd={() => setAdded((a) => ({ ...a, [p.id]: true }))} />
-            </li>
+            <motion.li
+              key={p.id}
+              layout={move ? "position" : false}
+              exit={move ? { opacity: 0, transition: { duration: dur.exit, ease: ease.out } } : undefined}
+            >
+              <PackageCard pkg={p} added={added[p.id] ?? p.added} onAdd={() => {
+                setAdded((a) => ({ ...a, [p.id]: true }));
+                toast.success("Přidáno do přípravy");
+              }} />
+            </motion.li>
           ))}
-        </ul>
-      ) : (
+        </AnimatePresence>
+      </ul>
+      {!results.length && (
         <StateCard
           className="mt-6 max-w-[620px]"
           role="status"
@@ -115,6 +128,7 @@ export function Catalog() {
 }
 
 function PackageCard({ pkg, added, onAdd }: { pkg: Package; added: boolean; onAdd: () => void }) {
+  const reduce = useReducedMotion();
   return (
     <article aria-labelledby={`p-${pkg.id}`} className="surface flex flex-col rounded-[28px] p-2">
       <div
@@ -146,13 +160,18 @@ function PackageCard({ pkg, added, onAdd }: { pkg: Package; added: boolean; onAd
             <BadgeCheck size={15} strokeWidth={1.75} className="text-success" aria-hidden />
             {pkg.status}
           </p>
-          {added ? (
-            <span role="status" className="flex h-10 items-center gap-1.5 rounded-full bg-success-soft px-3.5 text-[14px] font-semibold text-success">
-              <Check size={15} strokeWidth={2} aria-hidden />V přípravě
-            </span>
-          ) : (
-            <PrimaryPill onClick={onAdd}>Přidat předměty</PrimaryPill>
-          )}
+          <motion.div layout={reduce ? false : "size"} className="flex shrink-0 justify-center">
+            {added ? (
+              <span role="status" className="flex h-10 items-center gap-1.5 rounded-full bg-success-soft px-3.5 text-[14px] font-semibold text-success">
+                <motion.span initial={reduce ? { opacity: 0 } : { opacity: 0, scale: 0.25, filter: "blur(4px)" }} animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }} transition={springIcon}>
+                  <Check size={15} strokeWidth={2} aria-hidden />
+                </motion.span>
+                V přípravě
+              </span>
+            ) : (
+              <PrimaryPill onClick={onAdd}>Přidat předměty</PrimaryPill>
+            )}
+          </motion.div>
         </div>
       </div>
     </article>

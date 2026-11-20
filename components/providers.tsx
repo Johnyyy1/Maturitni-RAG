@@ -1,6 +1,10 @@
 "use client";
 
-import { ThemeProvider } from "next-themes";
+import { MotionConfig } from "motion/react";
+import { Drawer } from "@base-ui/react/drawer";
+import { Toaster } from "sonner";
+import { spring } from "@/lib/motion";
+import { ThemeProvider, useTheme } from "next-themes";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { CommandMenu } from "@/components/command-menu";
 
@@ -41,12 +45,37 @@ export function Providers({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
+  useEffect(() => {
+    const { navigation } = window as Window & { navigation?: EventTarget & { currentEntry: { index: number } | null } };
+    if (!navigation) return;
+    const direction = (event: Event) => {
+      const { navigationType, destination } = event as Event & { navigationType: string; destination: { index: number } };
+      if (navigationType === "replace") return;
+      document.documentElement.toggleAttribute(
+        "data-nav-back",
+        navigationType === "traverse" && destination.index < (navigation.currentEntry?.index ?? -1),
+      );
+    };
+    navigation.addEventListener("navigate", direction);
+    return () => navigation.removeEventListener("navigate", direction);
+  }, []);
+
   return (
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
       <UiContext.Provider value={{ openCommand, sidebarCollapsed, setSidebarCollapsed }}>
-        {children}
-        <CommandMenu open={commandOpen} instant={viaKeyboard} onClose={() => setCommandOpen(false)} />
+        <MotionConfig reducedMotion="user" transition={spring}>
+          <Drawer.Provider>
+            <Drawer.Indent className="drawer-page">{children}</Drawer.Indent>
+          </Drawer.Provider>
+          <AppToaster />
+          <CommandMenu open={commandOpen} instant={viaKeyboard} onClose={() => setCommandOpen(false)} />
+        </MotionConfig>
       </UiContext.Provider>
     </ThemeProvider>
   );
+}
+
+function AppToaster() {
+  const { resolvedTheme } = useTheme();
+  return <Toaster position="bottom-center" theme={resolvedTheme === "dark" ? "dark" : "light"} offset={32} mobileOffset={96} />;
 }

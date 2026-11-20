@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { motion, useReducedMotion } from "motion/react";
 import { useId } from "react";
+import { spring } from "@/lib/motion";
 import { cn } from "@/lib/cn";
 
 type Item = { label: string; value: string; href?: string };
@@ -49,7 +50,7 @@ export function Segmented({
             {active && (
               <motion.span
                 layoutId={`seg-${id}`}
-                transition={reduce ? { duration: 0 } : { type: "spring", bounce: 0, duration: 0.35 }}
+                transition={reduce ? { duration: 0 } : spring}
                 className="raised absolute inset-0 rounded-full"
               />
             )}
@@ -57,7 +58,7 @@ export function Segmented({
           </>
         );
         const cls = cn(
-          "relative inline-flex items-center justify-center rounded-full whitespace-nowrap",
+          "relative transition-colors duration-(--dur-hover) ease-[ease] inline-flex items-center justify-center rounded-full whitespace-nowrap",
           solid ? "tnum h-9 flex-1 text-[14px]" : "h-8 px-3.5 text-[13px]",
           active ? "font-semibold text-fg" : "font-medium text-muted hover:text-fg",
         );

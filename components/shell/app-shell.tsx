@@ -3,7 +3,9 @@
 import { BookOpen, ChartNoAxesColumn, Layers2, PanelLeft, Search, Sun } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { ViewTransition, useRef, useState, type ReactNode } from "react";
+import { motion, useMotionValueEvent, useReducedMotion, useScroll } from "motion/react";
+import { springMomentum } from "@/lib/motion";
 import { GlassIconButton } from "@/components/ui/buttons";
 import { useUi } from "@/components/providers";
 import { Sidebar } from "@/components/shell/sidebar";
@@ -20,7 +22,9 @@ export function AppShell({ variant = "student", children }: { variant?: "student
           <GlassIconButton icon={PanelLeft} label="Zobrazit panel" onClick={() => setSidebarCollapsed(false)} />
         </div>
       )}
-      <main id="obsah" className={cn("min-h-dvh pb-32 lg:pb-0", sidebarCollapsed ? "lg:pl-[50px]" : "lg:pl-[250px]")}>{children}</main>
+      <ViewTransition name="studium-content" default={{ "nav-back": "nav-back", default: "page" }}>
+        <main id="obsah" className={cn("shell-content min-h-dvh pb-32 lg:pb-0", sidebarCollapsed ? "lg:pl-[56px]" : "lg:pl-[250px]")}>{children}</main>
+      </ViewTransition>
       {variant === "student" && <MobileTabBar />}
     </>
   );
@@ -28,30 +32,12 @@ export function AppShell({ variant = "student", children }: { variant?: "student
 
 /** Floating bar at the top of a page. Shows a scroll edge (gradient, not a line) once content moves under it. */
 export function TopBar({ children, className }: { children: ReactNode; className?: string }) {
-  const scrolled = useScrolled();
   return (
     <>
-      <div
-        aria-hidden
-        className={cn(
-          "pointer-events-none fixed inset-x-0 top-0 z-10 h-24 bg-linear-to-b from-(--bg-d) from-40% to-transparent transition-opacity duration-200",
-          scrolled ? "opacity-100" : "opacity-0",
-        )}
-      />
-      <div className={cn("sticky top-3 z-20 flex h-11 items-center gap-2 lg:top-[22px] lg:h-10", className)}>{children}</div>
+      <div aria-hidden className="scroll-edge pointer-events-none fixed inset-x-0 top-0 z-10 h-24 bg-linear-to-b from-(--bg-d) from-40% to-transparent" />
+      <div className={cn("scroll-lift sticky top-3 z-20 flex h-11 items-center gap-2 lg:top-[22px] lg:h-10", className)}>{children}</div>
     </>
   );
-}
-
-function useScrolled() {
-  const [scrolled, setScrolled] = useState(false);
-  useEffect(() => {
-    const on = () => setScrolled(window.scrollY > 4);
-    on();
-    window.addEventListener("scroll", on, { passive: true });
-    return () => window.removeEventListener("scroll", on);
-  }, []);
-  return scrolled;
 }
 
 const tabs = [
@@ -64,22 +50,33 @@ const tabs = [
 /** MobileTabBar: floating glass capsule plus a separate round search button. */
 export function MobileTabBar() {
   const pathname = usePathname();
+  const reduce = useReducedMotion();
+  const { scrollY } = useScroll();
+  const mark = useRef(0);
+  const [compact, setCompact] = useState(false);
+  useMotionValueEvent(scrollY, "change", (y) => {
+    if (window.innerWidth < 1024 && (y <= 0 || Math.abs(y - mark.current) > 18)) {
+      setCompact(y > mark.current && y > 72);
+      mark.current = y;
+    }
+  });
   const { openCommand } = useUi();
   return (
     <>
       <div aria-hidden className="pointer-events-none fixed inset-x-0 bottom-0 z-20 h-36 bg-linear-to-b from-transparent to-(--bg-d) to-75% lg:hidden" />
       <div className="fixed right-3 bottom-[max(20px,env(safe-area-inset-bottom))] left-4 z-30 flex items-center gap-2 lg:hidden">
-        <nav aria-label="Hlavní navigace" className="glass flex h-[62px] flex-1 items-center rounded-full p-1 [--g-blur:30px] [--g-b:30px]">
+        <motion.nav initial={false} animate={{ scale: compact && !reduce ? 0.92 : 1 }} aria-label="Hlavní navigace" className="scroll-lift glass flex h-[62px] flex-1 items-center rounded-full p-1 [--g-blur:30px] [--g-b:30px]">
           {tabs.map((t) => {
             const active = !!t.match?.(pathname);
             const cls = cn(
-              "flex h-[54px] flex-1 flex-col items-center justify-center gap-0.5 rounded-full text-[10px] font-semibold",
-              active ? "bg-ring text-accent" : "text-fg",
+              "press relative flex h-[54px] flex-1 flex-col items-center justify-center gap-0.5 rounded-full text-[10px] font-semibold",
+              active ? "text-accent" : "text-fg",
             );
             const body = (
               <>
-                <t.icon size={22} strokeWidth={active ? 2 : 1.5} aria-hidden />
-                {t.label}
+                {active && <motion.span aria-hidden layoutId="mobile-tab-lens" transition={reduce ? { duration: 0 } : springMomentum} className="absolute inset-0 rounded-full bg-ring" />}
+                <t.icon className="relative" size={22} strokeWidth={active ? 2 : 1.5} aria-hidden />
+                <span className="relative">{t.label}</span>
               </>
             );
             return t.href ? (
@@ -92,7 +89,7 @@ export function MobileTabBar() {
               </span>
             );
           })}
-        </nav>
+        </motion.nav>
         <button
           type="button"
           onClick={openCommand}

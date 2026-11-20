@@ -26,5 +26,5 @@ export default function MapPage(props: Props) {
 async function MapContent({ params }: Props) {
   const { question } = await loadQuestion(params);
   if (question.subject !== "dejepis" || question.id !== "7") notFound();
-  return <ConceptMap question={question} nodes={conceptMap.nodes} edgesPath={conceptMap.edgesPath} />;
+  return <ConceptMap question={question} nodes={conceptMap.nodes} edges={conceptMap.edges} />;
 }
