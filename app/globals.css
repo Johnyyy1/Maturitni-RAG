@@ -468,7 +468,7 @@ html:not([data-seen-today]) .today-bar {
   animation: live var(--dur-pulse) linear infinite alternate;
 }
 .spin {
-  animation: spin 1s linear infinite;
+  animation: spin 750ms linear infinite; /* faster spin reads as faster loading */
 }
 
 /* ── View transitions: route content and theme ───────────────────────────────────────────── */
@@ -486,10 +486,10 @@ html:not([data-seen-today]) .today-bar {
   animation: none;
 }
 ::view-transition-old(.page) {
-  animation: var(--dur-exit) ease both edge-in reverse;
+  animation: var(--dur-exit) var(--ease-out) both edge-in reverse;
 }
 ::view-transition-new(.page) {
-  animation: var(--dur-exit) ease both edge-in;
+  animation: var(--dur-exit) var(--ease-out) both edge-in;
 }
 /* Back on mobile: the screen leaves to the right, the previous one comes in from the left (parallax). */
 @keyframes vt-out-right {
@@ -506,10 +506,10 @@ html:not([data-seen-today]) .today-bar {
   animation: none;
 }
 ::view-transition-old(.nav-back) {
-  animation: var(--dur-exit) ease both edge-in reverse;
+  animation: var(--dur-exit) var(--ease-out) both edge-in reverse;
 }
 ::view-transition-new(.nav-back) {
-  animation: var(--dur-exit) ease both edge-in;
+  animation: var(--dur-exit) var(--ease-out) both edge-in;
 }
 @media (max-width: 1023px) and (prefers-reduced-motion: no-preference) {
   :root[data-nav-back]::view-transition-old(.page),

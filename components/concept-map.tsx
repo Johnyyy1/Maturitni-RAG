@@ -110,7 +110,7 @@ export function ConceptMap({ question, nodes, edges }: { question: Question; nod
           <div className="flex-1" />
           <div role="group" aria-label="Přiblížení" className="glass-thin flex h-10 items-center rounded-full px-1">
             <GlassIconButton icon={Minus} label="Oddálit" size={32} iconSize={15} variant="plain" onClick={() => setZoom((z) => Math.max(0.3, +(z - 0.1).toFixed(2)))} />
-            <button type="button" onClick={() => { x.jump(0); y.jump(0); setZoom(1); }} aria-label="Obnovit přiblížení" className="tnum h-8 w-14 rounded-full text-[13px] font-semibold hover:bg-ring">
+            <button type="button" onClick={() => { x.jump(0); y.jump(0); setZoom(1); }} aria-label="Obnovit přiblížení" className="press tnum h-8 w-14 rounded-full text-[13px] font-semibold hover:bg-ring">
               {Math.round(zoom * 100)} %
             </button>
             <GlassIconButton icon={Plus} label="Přiblížit" size={32} iconSize={15} variant="plain" onClick={() => setZoom((z) => Math.min(2, +(z + 0.1).toFixed(2)))} />
@@ -251,7 +251,7 @@ function RelationList({ nodes, selected, onSelect }: { nodes: ConceptNode[]; sel
           >
             <span className="flex-1">{n.label}</span>
             {n.parent && <span className="sr-only">, navazuje na {nodes.find((p) => p.id === n.parent)?.label}</span>}
-            <ArrowRight size={15} strokeWidth={1.5} className="text-muted" aria-hidden />
+            <ArrowRight size={15} strokeWidth={1.5} className="nudge text-muted" aria-hidden />
           </button>
           {children(n.id).length > 0 && render(children(n.id), depth + 1)}
         </li>

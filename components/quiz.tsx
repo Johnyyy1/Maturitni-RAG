@@ -193,7 +193,7 @@ export function QuizView({ quiz }: { quiz: Quiz }) {
               {checked ? (
                 <span className="pl-3 text-[14px] font-medium text-muted lg:pl-0">Vyhodnoceno podle klíče</span>
               ) : (
-                <button type="button" onClick={(e) => next(e.detail === 0, e.shiftKey ? -1 : 1)} className="hit pl-3 text-[14px] font-medium text-muted hover:text-fg lg:pl-0">
+                <button type="button" onClick={(e) => next(e.detail === 0, e.shiftKey ? -1 : 1)} className="hit press pl-3 text-[14px] font-medium text-muted hover:text-fg lg:pl-0">
                   Přeskočit
                 </button>
               )}

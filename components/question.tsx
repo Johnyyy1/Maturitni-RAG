@@ -22,7 +22,7 @@ export function Breadcrumb({ back, items }: { back?: string; items: { label: str
               {i > 0 && <ChevronRight size={12} strokeWidth={1.5} className="shrink-0 text-muted" aria-hidden />}
               <li className={cn("truncate text-[13px]", last ? "font-semibold text-fg" : "font-medium text-muted")} aria-current={last ? "page" : undefined}>
                 {item.href && !last ? (
-                  <Link href={item.href} className="hover:text-fg">
+                  <Link href={item.href} className="transition-colors duration-(--dur-hover) ease-[ease] hover:text-fg">
                     {item.label}
                   </Link>
                 ) : (
@@ -91,7 +91,7 @@ export function SourceList({ sources, href }: { sources: Source[]; href: string 
     <ul className="flex flex-col gap-0.5">
       {sources.map((s) => (
         <li key={s.n}>
-          <Link href={`${href}#zdroj-${s.n}`} className="flex h-[58px] items-center gap-3.5 rounded-[14px] px-3 hover:bg-hover">
+          <Link href={`${href}#zdroj-${s.n}`} className="row flex h-[58px] items-center gap-3.5 rounded-[14px] px-3 hover:bg-hover">
             <DataIcon name={s.icon} size={18} className="text-muted" />
             <span className="flex flex-1 flex-col gap-0.5">
               <span className="text-[14px] font-medium">{s.title}</span>
