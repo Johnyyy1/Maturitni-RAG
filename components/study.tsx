@@ -7,13 +7,11 @@ import {
   Check,
   ChevronLeft,
   Copy,
-  Ellipsis,
   List,
   ListChecks,
+  MessageCircleQuestion,
   MessageSquareOff,
-  Mic,
   Network,
-  Plus,
   Quote,
   RotateCw,
   Sparkles,
@@ -40,15 +38,17 @@ import type { Question, Source, TutorMessage } from "@/lib/types";
 
 type Msg = TutorMessage & { streaming?: boolean; chunks?: string[] };
 
-const suggestions: { label: string; icon: LucideIcon }[] = [
-  { label: "Shrň to do tří bodů", icon: List },
-  { label: "Co byla červencová krize?", icon: CalendarClock },
-  { label: "Vyzkoušej mě", icon: ListChecks },
-];
+const suggestionIcons: Record<string, LucideIcon> = {
+  "Shrň to do tří bodů": List,
+  "Co byla červencová krize?": CalendarClock,
+  "Vyzkoušej mě": ListChecks,
+};
 
-export function StudyView({ question, initialThread }: { question: Question; initialThread: TutorMessage[] }) {
-  const sources = question.detail!.sources;
-  const [messages, setMessages] = useState<Msg[]>(initialThread);
+export function StudyView({ question }: { question: Question }) {
+  const { sources, tutor, map } = question.detail!;
+  const suggestions = Object.keys(tutor.answers).map((label) => ({ label, icon: suggestionIcons[label] ?? MessageCircleQuestion }));
+  const mapHref = map ? questionHref(question, "mapa") : undefined;
+  const [messages, setMessages] = useState<Msg[]>(tutor.thread);
   const [openSource, setOpenSource] = useState<number | null>(1);
   const [sheetSource, setSheetSource] = useState<number | null>(null);
   const [unavailable, setUnavailable] = useState(false);
@@ -151,14 +151,11 @@ export function StudyView({ question, initialThread }: { question: Question; ini
             value="studium"
             items={[
               { label: "Studovat", value: "studium", href: questionHref(question, "studium") },
-              { label: "Mapa", value: "mapa", href: questionHref(question, "mapa") },
+              ...(mapHref ? [{ label: "Mapa", value: "mapa", href: mapHref }] : []),
               { label: "Vyzkoušet se", value: "zkouska", href: questionHref(question, "zkouska") },
             ]}
           />
           <div className="flex-1" />
-          <span className="hidden lg:contents">
-            <GlassIconButton icon={Ellipsis} label="Další akce" aria-disabled />
-          </span>
         </div>
 
         {/* Thread */}
@@ -176,7 +173,7 @@ export function StudyView({ question, initialThread }: { question: Question; ini
                     <p className="max-w-[85%] rounded-[20px] bg-hover px-4 py-3 text-[15px]">{m.text}</p>
                   </div>
                 ) : (
-                  <TutorAnswer key={i} msg={m} sources={sources} openSource={openSource} onCite={cite} mapHref={questionHref(question, "mapa")} />
+                  <TutorAnswer key={i} msg={m} sources={sources} openSource={openSource} onCite={cite} mapHref={mapHref} />
                 ),
               )}
             </div>
@@ -214,9 +211,8 @@ export function StudyView({ question, initialThread }: { question: Question; ini
             <form
               onSubmit={onSubmit}
               style={{ height: composerHeight }}
-              className="composer scroll-lift glass fixed inset-x-4 bottom-[94px] z-20 mx-auto flex max-w-[620px] items-center gap-2 rounded-full px-2 [--g-blur:24px] [--g-b:30px] lg:absolute lg:bottom-7"
+              className="composer scroll-lift glass fixed inset-x-4 bottom-[94px] z-20 mx-auto flex max-w-[620px] items-center gap-2 rounded-full pr-2 pl-5 [--g-blur:24px] [--g-b:30px] lg:absolute lg:bottom-7"
             >
-              <GlassIconButton icon={Plus} label="Přidat přílohu" variant="plain" aria-disabled className="text-muted" />
               <label htmlFor="dotaz" className="sr-only">
                 Dotaz pro tutora
               </label>
@@ -236,13 +232,12 @@ export function StudyView({ question, initialThread }: { question: Question; ini
                 autoComplete="off"
                 className="min-w-0 flex-1 resize-none rounded-sm bg-transparent text-[15px] leading-6 text-fg outline-none placeholder:text-muted"
               />
-              <GlassIconButton icon={Mic} label="Diktovat" variant="plain" aria-disabled className="text-muted" />
               <button
                 type={busy ? "button" : "submit"}
                 aria-label={busy ? "Zastavit odpověď" : "Odeslat"}
                 onClick={busy ? () => abort.current?.abort() : undefined}
                 disabled={!busy && !draft.trim()}
-                className="press ink flex size-10 shrink-0 items-center justify-center rounded-full disabled:opacity-100"
+                className="press ink flex size-10 shrink-0 items-center justify-center rounded-full disabled:bg-hover disabled:text-muted disabled:shadow-none"
               >
                 <IconSwap state={busy ? "stop" : "send"}>
                   {busy ? <Square size={16} strokeWidth={2} aria-hidden /> : <ArrowUp size={18} strokeWidth={2} aria-hidden />}
@@ -256,14 +251,14 @@ export function StudyView({ question, initialThread }: { question: Question; ini
       {/* Inspector (desktop) */}
       <AnimatePresence initial={false}>
         {openSource !== null && (
-          <SourceInspector key="inspector" source={sources.find((s) => s.n === openSource)!} onClose={() => setOpenSource(null)} mapHref={questionHref(question, "mapa")} />
+          <SourceInspector key="inspector" source={sources.find((s) => s.n === openSource)!} onClose={() => setOpenSource(null)} mapHref={mapHref} />
         )}
       </AnimatePresence>
 
       {/* Bottom sheet (mobile) */}
       <Sheet open={sheetSource !== null} onClose={() => setSheetSource(null)} label="Zdroj">
         {sheetSource !== null && (
-          <SourceBody source={sources.find((s) => s.n === sheetSource)!} onClose={() => setSheetSource(null)} mapHref={questionHref(question, "mapa")} />
+          <SourceBody source={sources.find((s) => s.n === sheetSource)!} onClose={() => setSheetSource(null)} mapHref={mapHref} />
         )}
       </Sheet>
     </div>
@@ -303,7 +298,7 @@ const TutorAnswer = memo(function TutorAnswer({
   sources: Source[];
   openSource: number | null;
   onCite: (n: number) => void;
-  mapHref: string;
+  mapHref?: string;
 }) {
   const [copied, setCopied] = useState(false);
   const [vote, setVote] = useState<"up" | "down" | null>(null);
@@ -366,9 +361,11 @@ const TutorAnswer = memo(function TutorAnswer({
             />
             <SmallAction label="Dobrá odpověď" icon={ThumbsUp} pressed={vote === "up"} onClick={() => setVote((v) => (v === "up" ? null : "up"))} />
             <SmallAction label="Špatná odpověď" icon={ThumbsDown} pressed={vote === "down"} onClick={() => setVote((v) => (v === "down" ? null : "down"))} />
-            <Link href={mapHref} aria-label="Zobrazit v mapě pojmů" title="Zobrazit v mapě pojmů" className="hit press flex size-8 items-center justify-center rounded-full hover:bg-hover hover:text-fg">
-              <Network size={16} strokeWidth={1.5} aria-hidden />
-            </Link>
+            {mapHref && (
+              <Link href={mapHref} aria-label="Zobrazit v mapě pojmů" title="Zobrazit v mapě pojmů" className="hit press flex size-8 items-center justify-center rounded-full hover:bg-hover hover:text-fg">
+                <Network size={16} strokeWidth={1.5} aria-hidden />
+              </Link>
+            )}
           </div>
       )}
     </article>
@@ -416,7 +413,7 @@ export function TutorUnavailable({ onRetry, caption }: { onRetry: () => void; ca
   );
 }
 
-function SourceInspector({ source, onClose, mapHref }: { source: Source; onClose: () => void; mapHref: string }) {
+function SourceInspector({ source, onClose, mapHref }: { source: Source; onClose: () => void; mapHref?: string }) {
   const reduce = useReducedMotion();
   return (
     <motion.aside
@@ -431,7 +428,7 @@ function SourceInspector({ source, onClose, mapHref }: { source: Source; onClose
   );
 }
 
-function SourceBody({ source, onClose, mapHref }: { source: Source; onClose: () => void; mapHref: string }) {
+function SourceBody({ source, onClose, mapHref }: { source: Source; onClose: () => void; mapHref?: string }) {
   const passage = useRef<HTMLDivElement>(null);
   useEffect(() => {
     passage.current?.scrollIntoView({ block: "nearest" });
@@ -466,9 +463,11 @@ function SourceBody({ source, onClose, mapHref }: { source: Source; onClose: () 
         <GlassButton icon={BookOpen} variant="solid" full className="flex-1" aria-disabled title="Celý podklad připravujeme">
           Celý podklad
         </GlassButton>
-        <GlassButton href={mapHref} icon={Network} variant="solid" full className="flex-1">
-          Mapa pojmů
-        </GlassButton>
+        {mapHref && (
+          <GlassButton href={mapHref} icon={Network} variant="solid" full className="flex-1">
+            Mapa pojmů
+          </GlassButton>
+        )}
       </div>
     </div>
   );

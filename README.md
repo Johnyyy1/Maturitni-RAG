@@ -78,7 +78,7 @@ npm run dev            # http://localhost:3000
 | `/karticky` | 32 Líc → 24 Odpověď → 33 Hotovo |
 | `/balicky` | 34 Katalog balíčků (prázdné hledání = stav z 39) |
 | `/redakce/importy/[id]` | 35 Kontrola importu (redakční sidebar) |
-| `/design` | 20 Materiály + 39 Stavy |
+| `/design` | 20 Materiály + 39 Stavy (jen ve vývoji, `npm run dev`; v produkci 404) |
 
 Ukázkové adresy: `/predmety/dejepis/otazky/7`, `/kvizy/prvni-svetova-valka`, `/redakce/importy/24`. Výpadek tutora: `/predmety/dejepis/otazky/7/studium?simulace=tutor-nedostupny`.
 

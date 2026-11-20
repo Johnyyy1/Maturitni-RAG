@@ -24,7 +24,8 @@ const entries: Entry[] = [
   { label: "Studijní balíčky", hint: "Katalog", href: "/balicky", icon: Package, group: "Stránky" },
   { label: "Kartičky", hint: "Opakování", href: "/karticky", icon: Layers2, group: "Stránky" },
   { label: "Nový kvíz", hint: "Kvízy", href: "/kvizy/novy", icon: ListChecks, group: "Stránky" },
-  { label: "Design systém", hint: "Materiály", href: "/design", icon: Palette, group: "Stránky" },
+  // Internal reference page: only offered while developing.
+  ...(process.env.NODE_ENV === "development" ? [{ label: "Design systém", hint: "Materiály", href: "/design", icon: Palette, group: "Stránky" as const }] : []),
 ];
 
 const fold = (s: string) => s.normalize("NFD").replace(/\p{Diacritic}/gu, "").replace(/\s+/g, " ").toLowerCase();

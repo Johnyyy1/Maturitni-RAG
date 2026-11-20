@@ -210,12 +210,12 @@ export const conceptMap: { edges: Record<string, string>; nodes: ConceptNode[] }
     monarchie: "M662 430l0 130",
   },
   nodes: [
-    { id: "valka", label: "První světová válka", x: 310, y: 316, root: true },
-    { id: "priciny", label: "Dlouhodobé příčiny", x: 71, y: 480, parent: "valka" },
-    { id: "zaminka", label: "Záminka", x: 362, y: 480, parent: "valka" },
-    { id: "dusledky", label: "Důsledky", x: 615, y: 480, parent: "valka" },
-    { id: "rivalita", label: "Rivalita mocností", x: 13, y: 650, parent: "priciny" },
-    { id: "bloky", label: "Spojenecké bloky", x: 161, y: 650, parent: "priciny" },
+    { id: "valka", label: "První světová válka", x: 310, y: 316, root: true, detail: { kind: "Téma", text: "Konflikt velmocí v letech 1914–1918. Mapa odděluje jeho dlouhodobé příčiny, bezprostřední záminku a důsledky.", citation: "Studijní podklad, kap. 4" } },
+    { id: "priciny", label: "Dlouhodobé příčiny", x: 71, y: 480, parent: "valka", detail: { kind: "Příčina", text: "Napětí, které válku umožnilo: soupeření velmocí o kolonie a vliv, zbrojení a pevné spojenecké závazky.", citation: "Studijní podklad, kap. 4" } },
+    { id: "zaminka", label: "Záminka", x: 362, y: 480, parent: "valka", detail: { kind: "Záminka", text: "Konkrétní událost, která konflikt spustila. Sama by válku nezpůsobila, kdyby jí nepředcházelo dlouhodobé napětí.", citation: "Studijní podklad, kap. 4" } },
+    { id: "dusledky", label: "Důsledky", x: 615, y: 480, parent: "valka", detail: { kind: "Důsledek", text: "Válka změnila politickou mapu Evropy a ukončila několik velkých monarchií.", citation: "Studijní podklad, kap. 4" } },
+    { id: "rivalita", label: "Rivalita mocností", x: 13, y: 650, parent: "priciny", detail: { kind: "Příčina", text: "Velmoci soupeřily o kolonie, trhy a vliv v Evropě. Soupeření patřilo k dlouhodobým příčinám války.", citation: "Studijní podklad, kap. 4" } },
+    { id: "bloky", label: "Spojenecké bloky", x: 161, y: 650, parent: "priciny", detail: { kind: "Příčina", text: "Evropa se rozdělila na Trojspolek a Dohodu. Spojenecké závazky pak během několika dní zatáhly do konfliktu další mocnosti.", citation: "Studijní podklad, kap. 4" } },
     {
       id: "atentat",
       label: "Atentát v Sarajevu",
@@ -229,6 +229,6 @@ export const conceptMap: { edges: Record<string, string>; nodes: ConceptNode[] }
         related: ["Červencová krize", "Rakousko-Uhersko a Srbsko"],
       },
     },
-    { id: "monarchie", label: "Rozpad monarchií", x: 587, y: 650, parent: "dusledky" },
+    { id: "monarchie", label: "Rozpad monarchií", x: 587, y: 650, parent: "dusledky", detail: { kind: "Důsledek", text: "Po válce zanikly velké monarchie, mezi nimi Rakousko-Uhersko. Na jejich místě vznikly nové státy.", citation: "Studijní podklad, kap. 4" } },
   ],
 };

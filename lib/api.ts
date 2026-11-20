@@ -5,7 +5,7 @@
 import { attempts } from "@/lib/mock/study";
 import { imports, packages } from "@/lib/mock/catalog";
 import { questions } from "@/lib/mock/questions";
-import type { Attempt, ImportJob, Package, Question, TutorMessage } from "@/lib/types";
+import type { Attempt, ImportJob, Package, Question } from "@/lib/types";
 
 export class TutorUnavailableError extends Error {
   constructor() {
@@ -52,29 +52,6 @@ export function searchPackages(query: string, filter: PackageFilter): Package[] 
   );
 }
 
-export const initialThread: TutorMessage[] = [
-  { role: "student", text: "Jaký je rozdíl mezi příčinou války a její záminkou?" },
-  {
-    role: "tutor",
-    text:
-      "Příčina je dlouhodobý tlak, který válku umožnil: soupeření velmocí o kolonie a vliv, závody ve zbrojení a pevné spojenecké bloky.\n\n" +
-      "Záminka je konkrétní událost, která konflikt spustila. Tou byl atentát na Františka Ferdinanda v Sarajevu 28. června 1914, po kterém přišla červencová krize.",
-    citations: [1, 2],
-  },
-];
-
-const cannedAnswers: Record<string, string> = {
-  "Shrň to do tří bodů":
-    "1. Velmoci soupeřily o kolonie, trhy a vliv [1].\n2. Evropa se rozdělila do dvou spojeneckých bloků a zbrojila [1].\n3. Záminkou byl atentát v Sarajevu 28. června 1914 [2].",
-  "Co byla červencová krize?":
-    "Červencová krize přišla po atentátu v Sarajevu [2]. Rakousko-Uhersko vydalo Srbsku ultimátum a po jeho odmítnutí vyhlásilo válku. Spojenecké závazky pak během několika dní zatáhly do konfliktu další mocnosti [1].",
-  "Vyzkoušej mě":
-    "Dobře. Co bylo bezprostřední záminkou první světové války a proč to nebyla její příčina? Odpověz vlastními slovy [1].",
-};
-
-const fallbackAnswer =
-  "Podle podkladu patřilo soupeření velmocí o vliv a jejich spojenecké závazky k dlouhodobým příčinám války [1]. Atentát v Sarajevu se stal bezprostřední záminkou [2].";
-
 /**
  * Streams a tutor answer token by token. Citations are inline markers `[n]` that refer to the
  * question's sources. Add `?simulace=tutor-nedostupny` to the URL to simulate an outage.
@@ -84,9 +61,10 @@ export async function* askTutor(question: Question, text: string, signal?: Abort
     await wait(500, signal);
     throw new TutorUnavailableError();
   }
-  if (!question.detail?.sources.length) throw new NoVerifiedSourceError();
+  const tutor = question.detail?.tutor;
+  if (!tutor || !question.detail?.sources.length) throw new NoVerifiedSourceError();
 
-  const answer = cannedAnswers[text.trim()] ?? fallbackAnswer;
+  const answer = tutor.answers[text.trim()] ?? tutor.fallback;
   await wait(450, signal);
   for (const token of answer.match(/\S+\s*/g) ?? []) {
     await wait(28, signal);

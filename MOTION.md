@@ -79,7 +79,7 @@ Dvě další karty tvoří viditelný balíček a obě strany horní karty sdí
 
 | Závažnost | Before | After | Why |
 | --- | --- | --- | --- |
-| HIGH | Původní zdrojový sheet měl jednu polohu a zavíral se ovládacím prvkem, klávesou nebo kliknutím mimo. | Base UI Drawer má fáze 53 % a 82 %, Escape, backdrop a přímé gesto. Obsah zůstává na místě během výstupu. | Zdroje lze číst a zavírat palcem, focus spravuje dialog. |
+| HIGH | Původní zdrojový sheet měl jednu polohu a zavíral se ovládacím prvkem, klávesou nebo kliknutím mimo. | Base UI Drawer má výšku podle obsahu (max. 85 dvh), Escape, backdrop a přímé gesto. Obsah zůstává na místě během výstupu. | Zdroje lze číst a zavírat palcem, focus spravuje dialog. |
 | MEDIUM | Inspektor na desktopu používal blur 8 px a škáloval text. | Inspektor se posune o 16 px, blur je 4 px, výstup je kratší. | Směr odpovídá umístění panelu a text zůstává stabilnější. |
 | MEDIUM | Command menu používalo stejný blur a scale pro režim myši i pro zkratku s nulovou délkou. | Klávesové vyvolání je okamžité, výsledky nemají stagger. Myš má krátký vstup. | Opakované vyhledávání bez čekání. |
 | MEDIUM | Animace postupu přepočítávala šířku při každém snímku. | Kroky používají sdílenou pružinu přes layout a klávesové skoky jsou okamžité. | Kontext se zachová při vizuálním posunu a odpověď z klávesnice reaguje hned. |

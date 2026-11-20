@@ -6,7 +6,7 @@
 /* Hover only with a fine pointer: a tap on touch must never leave a hover state stuck. */
 @custom-variant hover {
   @media (hover: hover) and (pointer: fine) {
-    &:hover {
+    &:not([aria-disabled="true"]):hover {
       @slot;
     }
   }
@@ -102,6 +102,11 @@
   }
   button:not(:disabled), [role="button"], a[href], label[for], summary {
     cursor: pointer;
+  }
+  /* “Coming soon” controls: clearly inactive. Hover and press already skip them. */
+  button[aria-disabled="true"], [aria-disabled="true"] {
+    opacity: 0.45;
+    cursor: default;
   }
   kbd {
     font-family: inherit;

@@ -59,9 +59,10 @@ export interface ExamNumber {
   label: string;
   title: string;
   prompt: string;
-  units: string[];
+  /** Unit choices; omitted when the answer is a plain number. */
+  units?: string[];
   /** Answer key: closed tasks are evaluated against it, not by AI. */
-  key: { value: number; unit: string };
+  key: { value: number; unit?: string };
 }
 
 export type ExamTask = ExamText | ExamNumber;
@@ -73,6 +74,10 @@ export interface QuestionDetail {
   outline: OutlineStep[];
   sources: Source[];
   lastAttempt?: { when: string; status: string; note: string; attempt: string };
+  /** Opening thread of the study chat and canned answers keyed by suggestion (mock tutor). */
+  tutor: { thread: TutorMessage[]; answers: Record<string, string>; fallback: string };
+  /** The package has a concept map for this question. */
+  map?: boolean;
 }
 
 export interface Question {
@@ -164,7 +169,7 @@ export interface ConceptNode {
     kind: string;
     text: string;
     citation: string;
-    related: string[];
+    related?: string[];
   };
 }
 
