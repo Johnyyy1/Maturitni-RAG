@@ -45,7 +45,7 @@ Zdroj pravdy je `design/MaturitaRAG.pen`, framy 20–39 („· Glass“) a jejic
 ## Akce, které design nekreslí
 
 Pravidlo: co nefunguje a v pilotu nebude, je skryté (Další akce „…“, Sdílet, Oznámení, příloha a diktování v chatu tutora).
-Co přijde brzy, je viditelné, ale zřetelně neaktivní (`aria-disabled`, opacita 45 %, bez hoveru a stisku, textová tlačítka se štítkem „Brzy“): Pokrok, redakční Balíčky / Otázky / Publikace / Ověřování, „Více“, diktování ve zkoušce, Celý podklad, Porovnat se vzorovou odpovědí, Zobrazit odpověď (u pokusu bez vyhodnocení), Zadat kód a Zrušit import.
+Co přijde brzy, je viditelné, ale zřetelně neaktivní (`aria-disabled`, opacita 45 %, bez hoveru a stisku, textová tlačítka se štítkem „Brzy“): Pokrok, redakční Balíčky / Otázky / Publikace / Ověřování, „Více“, Celý podklad, Porovnat se vzorovou odpovědí, Zobrazit odpověď (u pokusu bez vyhodnocení), Zadat kód a Zrušit import.
 Stránka `/design` i její položka v hledání existují jen ve vývojovém režimu; v produkci vrací 404.
 Hero „Pokračovat“ bere název, odkaz i postup („3 z 5 kroků“) z osnovy rozpracované otázky. Zkouška nanečisto ukazuje vždy zadání dané otázky.
 
@@ -54,6 +54,7 @@ Funkční navíc:
 - **Ozubené kolo u účtu** otevře menu vzhledu (Světlý / Tmavý / Podle systému).
 - **Záložka** u otázky se přepíná: obrys, při uložení výplň.
 - **„Zkontrolovat 2 chyby“** filtruje tabulku importu na chybné řádky.
+- **Diktovat** ve zkoušce zapne mikrofon a pole odpovědi reaguje na hlas efektem `voice-glow`. Přepis řeči na text zatím není.
 
 ## Pohyb
 
