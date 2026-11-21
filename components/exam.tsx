@@ -1,9 +1,11 @@
 "use client";
 
-import { Check, LoaderCircle, ChevronsUpDown, CircleCheck, CircleX, CloudCheck, Eye, EyeOff, Mic, X } from "lucide-react";
+import { Check, LoaderCircle, ChevronsUpDown, CircleCheck, CircleX, CloudCheck, Eye, EyeOff, Mic, MicOff, X } from "lucide-react";
 import { Select } from "@base-ui/react/select";
 import { motion, useReducedMotion } from "motion/react";
 import { toast } from "sonner";
+import { useTheme } from "next-themes";
+import { useMicrophone, VoiceBeam } from "voice-glow";
 import { IconSwap } from "@/components/ui/icon-swap";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState, type FormEvent } from "react";
@@ -80,6 +82,14 @@ function TextTask({ question }: { question: Question }) {
   const reduce = useReducedMotion();
   const words = text.trim() ? text.trim().split(/\s+/).length : 0;
   const fieldId = useId();
+  const mic = useMicrophone();
+  const live = mic.state === "live";
+  const { resolvedTheme } = useTheme();
+
+  async function toggleMic() {
+    if (live) return mic.stop();
+    if (!(await mic.start())) toast.error("Mikrofon se nepodařilo zapnout");
+  }
 
   // Restore the draft after hydration (localStorage is not available on the server).
   useEffect(() => {
@@ -154,7 +164,11 @@ function TextTask({ question }: { question: Question }) {
           {exam.title}
         </h1>
         <p className="mt-2.5 text-[16px] leading-[1.5] text-muted lg:mt-3 lg:text-[17px]">{exam.prompt}</p>
-        <div className="surface mt-[18px] flex flex-1 flex-col rounded-[22px] p-[18px] lg:mt-6 lg:rounded-[18px] lg:bg-app lg:px-5 lg:shadow-[inset_0_0_0_1px_var(--ring-strong)]">
+        <VoiceBeam stream={mic.stream} theme={resolvedTheme === "dark" ? "dark" : "light"}
+          // The default preset is tuned for a ~350px chat input; this field is up to ~700px wide.
+          scale={2} strength={1}
+          className="mt-[18px] flex flex-1 flex-col lg:mt-6">
+        <div className="surface flex flex-1 flex-col rounded-[22px] p-[18px] lg:rounded-[18px] lg:bg-app lg:px-5 lg:shadow-[inset_0_0_0_1px_var(--ring-strong)]">
           <label htmlFor={fieldId} className="sr-only">
             Tvoje odpověď
           </label>
@@ -168,12 +182,16 @@ function TextTask({ question }: { question: Question }) {
             placeholder="Napiš odpověď vlastními slovy…"
             className="flex-1 resize-none bg-transparent text-[16px] leading-[1.6] text-fg outline-none placeholder:text-muted lg:text-[17px]"
           />
-          <div className="flex items-center gap-1.5 pt-2 text-[12px] text-muted lg:hidden">
-            <EyeOff size={14} strokeWidth={1.5} aria-hidden />
-            <span className="flex-1">Čas se měří na pozadí</span>
-            <span className="tnum font-medium">{plural(words, "slovo", "slova", "slov")}</span>
+          <div className="flex items-center gap-1.5 pt-2 text-[12px] text-muted">
+            <EyeOff size={14} strokeWidth={1.5} className="lg:hidden" aria-hidden />
+            <span className="flex-1 lg:hidden">Čas se měří na pozadí</span>
+            <span className="tnum font-medium lg:hidden">{plural(words, "slovo", "slova", "slov")}</span>
+            <GlassIconButton icon={live ? MicOff : Mic} label={live ? "Zastavit diktování" : "Diktovat"} variant="plain" aria-pressed={live}
+              disabled={mic.state === "requesting"} onClick={() => void toggleMic()}
+              className={cn("-mr-2 -mb-2 ml-auto", live ? "text-accent!" : "text-muted!")} />
           </div>
         </div>
+        </VoiceBeam>
         <div className="mt-3.5 hidden items-center gap-4 text-[13px] text-muted lg:flex">
           <span className="flex flex-1 items-center gap-1.5" aria-live="polite">
             {saveState !== "idle" && (
@@ -189,14 +207,8 @@ function TextTask({ question }: { question: Question }) {
         </div>
       </section>
 
-      <ActionBar label="Odevzdání" className="lg:pl-3.5">
-        <span className="hidden lg:contents">
-          <GlassIconButton icon={Mic} label="Diktovat" size={44} variant="plain" aria-disabled />
-        </span>
+      <ActionBar label="Odevzdání" className="lg:pl-[22px]">
         <span className="hidden flex-1 text-[13px] text-muted lg:block">Po odevzdání uvidíš rozbor</span>
-        <span className="lg:hidden">
-          <GlassIconButton icon={Mic} label="Diktovat" size={52} variant="plain" iconSize={20} aria-disabled />
-        </span>
         {submitButton(44)}
         {submitButton(52)}
       </ActionBar>
