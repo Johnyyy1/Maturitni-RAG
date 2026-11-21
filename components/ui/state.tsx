@@ -15,15 +15,17 @@ const tones = {
 export function StateCard({
   icon: Icon,
   tone,
+  avatar,
   title,
   text,
   actions,
   caption,
   role,
   className,
-}: {
-  icon: LucideIcon;
-  tone: keyof typeof tones;
+}: (
+  | { icon: LucideIcon; tone: keyof typeof tones; avatar?: never }
+  | { avatar: ReactNode; icon?: never; tone?: never }
+) & {
   title: string;
   text: string;
   actions?: ReactNode;
@@ -35,9 +37,11 @@ export function StateCard({
     <section role={role} aria-label={caption ?? title} className={cn("surface flex flex-col rounded-[26px] p-7", className)}>
       {caption && <p className="text-[12px] font-semibold text-muted">{caption}</p>}
       <div className="min-h-4 flex-1" />
-      <span className={cn("flex size-11 items-center justify-center rounded-full", tones[tone])}>
-        <Icon size={20} strokeWidth={1.75} aria-hidden />
-      </span>
+      {avatar ?? (Icon && tone && (
+        <span className={cn("flex size-11 items-center justify-center rounded-full", tones[tone])}>
+          <Icon size={20} strokeWidth={1.75} aria-hidden />
+        </span>
+      ))}
       <h2 className="mt-4 text-[22px] font-semibold tracking-[-0.5px]">{title}</h2>
       <p className="mt-1.5 max-w-[440px] text-[15px] leading-[1.5] text-muted">{text}</p>
       {actions && <div className="mt-[18px] flex flex-wrap gap-2">{actions}</div>}
