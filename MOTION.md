@@ -4,9 +4,9 @@
 | --- | --- | --- | --- |
 | ⌘K, klávesové odpovědi, navigace ve výsledcích | Velmi vysoká | Okamžitá odezva | Bez posunu a bez čekání, u odhalení kartičky lze ponechat prolnutí. |
 | Tlačítka, řádky a karty | Vysoká | Potvrdit stisk a ukázat interaktivní plochu | CSS stisk, barva, stín a posun šipky. Karty zůstávají na místě. |
-| Sidebar, segmenty a tab bar | Vysoká | Ukázat změnu výběru | Sdílená pilulka, jemné přebarvení. |
+| Sidebar, segmenty a tab bar | Vysoká | Ukázat změnu výběru | Sdílená pilulka pod textem, jemné přebarvení. Sidebar zvýrazní položku hned po kliknutí, i když se trasa ještě načítá. |
 | Menu, tooltip a hledání myší | Občasná | Ukázat vazbu na spouštěč | Krátké prolnutí a změna měřítka. Výsledky se zobrazují najednou. |
-| Trasy a téma | Občasná | Zachovat orientaci | Prolnutí obsahu, na mobilu směrový návrat. Změna tématu prolne celé plátno. |
+| Trasy a téma | Občasná | Zachovat orientaci | Starý obsah zmizí a nový vyjede o 6 px (240 ms), dvě stránky se nikdy nepřekrývají. Sidebar a tab bar při vstupu do fokusového toku prolnou. Na mobilu směrový návrat. Změna tématu prolne celé plátno. |
 | Tutor a inspektor | Občasná | Ukázat nový text a otevřený zdroj | Text se prolíná na místě. Inspektor přijíždí od okraje, pasáž se jednou zvýrazní. |
 | Kvíz a kartičky | Opakovaná | Oddělit otázky a ukázat vyhodnocení | Krátká odezva myší, okamžité zkratky a přímé tažení na dotyku. |
 | Mapa | Občasná | Udržet orientaci při posunu a přiblížení | Přímé gesto, plynulé přiblížení a zvýraznění cesty. |

@@ -38,7 +38,7 @@ export function Segmented({
       aria-label={label}
       role={isNav ? undefined : "radiogroup"}
       className={cn(
-        "flex items-center gap-0.5 rounded-full p-1",
+        "isolate flex items-center gap-0.5 rounded-full p-1",
         solid ? "h-11 w-full bg-hover" : "glass-thin h-10",
         className,
       )}
@@ -51,7 +51,7 @@ export function Segmented({
               <motion.span
                 layoutId={`seg-${id}`}
                 transition={reduce ? { duration: 0 } : spring}
-                className="raised absolute inset-0 rounded-full"
+                className="raised absolute inset-0 -z-10 rounded-full"
               />
             )}
             <span className="relative">{item.label}</span>

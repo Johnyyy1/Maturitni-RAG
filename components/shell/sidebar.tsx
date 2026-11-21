@@ -25,7 +25,7 @@ import { Menu } from "@base-ui/react/menu";
 import { Tooltip } from "@base-ui/react/tooltip";
 import { flushSync } from "react-dom";
 import { useTheme } from "next-themes";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { DataIcon } from "@/components/icon";
 import { useUi } from "@/components/providers";
 import { editor, student, studyPackage, subjects } from "@/lib/mock/subjects";
@@ -63,6 +63,10 @@ export function Sidebar({ variant = "student" }: { variant?: "student" | "editor
   const { sidebarCollapsed, setSidebarCollapsed } = useUi();
   const isEditor = variant === "editor";
   const person = isEditor ? editor : student;
+  // The clicked item lights up at once, while the route may still be loading.
+  const [pending, setPending] = useState<{ from: string; to: string } | null>(null);
+  const current = pending?.from === pathname ? pending.to : pathname;
+  const go = (to: string) => setPending({ from: pathname, to });
 
   return (
     <>
@@ -70,7 +74,7 @@ export function Sidebar({ variant = "student" }: { variant?: "student" | "editor
         <div className="fixed top-[72px] left-2.5 z-30 hidden flex-col gap-1 lg:flex">
           <Tooltip.Provider delay={400} closeDelay={0}>
             {(isEditor ? editorNav : [...studentNav, ...subjectNav]).filter((item) => item.href).map((item) => (
-              <SidebarItem key={item.label} item={item} active={!!item.match?.(pathname)} compact />
+              <SidebarItem key={item.label} item={item} active={!!item.match?.(current)} onNavigate={go} compact />
             ))}
           </Tooltip.Provider>
         </div>
@@ -105,16 +109,16 @@ export function Sidebar({ variant = "student" }: { variant?: "student" | "editor
           <ChevronsUpDown size={14} strokeWidth={1.5} className="text-muted" aria-hidden />
         </Link>
 
-        <nav aria-label={isEditor ? "Redakce" : "Pracovní prostor"} className="flex flex-col gap-0.5">
+        <nav aria-label={isEditor ? "Redakce" : "Pracovní prostor"} className="isolate flex flex-col gap-0.5">
           <SectionLabel>{isEditor ? "Redakce" : "Pracovní prostor"}</SectionLabel>
           {(isEditor ? editorNav : studentNav).map((item) => (
-            <SidebarItem key={item.label} item={item} active={!!item.match?.(pathname)} />
+            <SidebarItem key={item.label} item={item} active={!!item.match?.(current)} onNavigate={go} />
           ))}
           {!isEditor && (
             <>
               <SectionLabel>Moje předměty</SectionLabel>
               {subjectNav.map((item) => (
-                <SidebarItem key={item.label} item={item} active={!!item.match?.(pathname)} />
+                <SidebarItem key={item.label} item={item} active={!!item.match?.(current)} onNavigate={go} />
               ))}
             </>
           )}
@@ -141,19 +145,19 @@ function SectionLabel({ children }: { children: ReactNode }) {
   return <p className="px-2.5 pt-[18px] pb-1.5 text-[12px] font-medium text-muted">{children}</p>;
 }
 
-function SidebarItem({ item, active, compact = false }: { item: NavItem; active: boolean; compact?: boolean }) {
+function SidebarItem({ item, active, onNavigate, compact = false }: { item: NavItem; active: boolean; onNavigate: (href: string) => void; compact?: boolean }) {
   const reduce = useReducedMotion();
   const color = active ? "text-accent" : "text-muted";
   const icon = typeof item.icon === "string"
     ? <DataIcon name={item.icon} size={16} className={cn("relative", color)} />
     : <item.icon size={16} strokeWidth={active ? 2 : 1.5} className={cn("relative", color)} aria-hidden />;
-  const cls = cn("row relative flex shrink-0 items-center gap-2.5 rounded-xl text-[14px]", compact ? "size-10 justify-center" : "h-9 px-2.5", active ? "font-semibold" : "font-medium hover:bg-hover");
+  const cls = cn("row relative flex shrink-0 items-center gap-2.5 rounded-xl text-[14px]", compact ? "size-10 justify-center" : "h-9 px-2.5", active ? "font-semibold" : "font-medium", !active && item.href && "hover:bg-hover");
   const href = item.href;
   if (!href) return <span aria-disabled="true" title="Připravujeme" className={cls}>{icon}{item.label}</span>;
 
   const link = (
-    <Link href={href} aria-label={compact ? item.label : undefined} aria-current={active ? "page" : undefined} className={cls}>
-      {active && <motion.span aria-hidden layoutId={compact ? "sidebar-compact-pill" : "sidebar-pill"} transition={reduce ? { duration: 0 } : undefined} className="raised pointer-events-none absolute inset-0 rounded-xl" />}
+    <Link href={href} onNavigate={() => onNavigate(href)} aria-label={compact ? item.label : undefined} aria-current={active ? "page" : undefined} className={cls}>
+      {active && <motion.span aria-hidden layoutId={compact ? "sidebar-compact-pill" : "sidebar-pill"} transition={reduce ? { duration: 0 } : undefined} className="raised pointer-events-none absolute inset-0 -z-10 rounded-xl" />}
       {icon}
       {!compact && <span className="relative flex-1">{item.label}</span>}
       {!compact && item.count && <span className="tnum relative text-[12px] font-medium text-muted">{item.count}</span>}
