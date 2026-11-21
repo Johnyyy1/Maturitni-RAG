@@ -62,6 +62,7 @@ Funkční navíc:
 - **Kartičky jsou balíček.** Pod horní kartou vykukují až dvě neprůhledné karty. Po hodnocení ukazatelem horní karta odchází doleva, doprava nebo nahoru podle akce. Na dotyku lze ohodnotit i tažením. Karta se otáčí ve 3D a i hodnocení klávesami 1–3 ji pošle odpovídajícím směrem; omezený pohyb ponechá prolnutí.
 - **Inspektor, bottom sheet a ⌘K.** Inspektor přichází zprava, mobilní sheet zdola a ⌘K se zobrazí okamžitě.
 - **Tutor má tvář.** Animovaný avatar `bot-avatars` (vždy tvar „clover“, `components/ui/tutor-avatar.tsx`) je jen u tutora: v hlavičce odpovědi pracuje během streamu, při výpadku spí a ve stavu bez podkladu nahrazuje ikonu. Jinde se nepoužívá, aby vždy znamenal tutora.
+- **Kolem pole dotazu pro tutora klidně obíhá dlouhý světelný paprsek** (`border-beam` přes `components/ui/beam.tsx`). Knihovna točí paprsek kolem středu prvku, takže na dlouhé pilulce na koncích přeskakoval a barevné skvrny nepokryly celé hrany. Paprsek je proto řetěz krátkých úseků, jejichž střed jede po ose pilulky a otáčí se jen na koncích: celý paprsek (asi 300 px, teplá hlava, chladný ocas) má všude stejnou délku i rychlost (150 px/s) a plynule se ohne kolem konců. Při psaní se paprsek zastaví a rozsvítí se klidný barevný rámeček s jemnou září vně pole. Sleduje téma aplikace a při omezeném pohybu se nehýbe.
 
 ## Next.js 16
 

@@ -52,6 +52,20 @@ test("tutor streamuje odpověď a citace otevře inspektor se zdrojem", async ({
   await expect(inspector.locator("mark")).toContainText("Gavrilo Princip");
 });
 
+test("paprsek kolem pole dotazu se při psaní zastaví, rozsvítí rámeček a po odchodu vrátí", async ({ page }) => {
+  await open(page, "/predmety/dejepis/otazky/7/studium");
+  const beam = page.locator("[data-beam]:has(#dotaz)");
+  const ring = beam.locator("> [data-pill-ring]");
+  await expect(beam).toHaveAttribute("data-active", "");
+  await expect(ring).not.toHaveAttribute("data-on", "");
+  await page.getByLabel("Dotaz pro tutora").click();
+  await expect(beam).not.toHaveAttribute("data-active", "");
+  await expect(ring).toHaveAttribute("data-on", "");
+  await page.getByRole("heading", { level: 1 }).click();
+  await expect(beam).toHaveAttribute("data-active", "");
+  await expect(ring).not.toHaveAttribute("data-on", "");
+});
+
 test("tutor nedostupný ukáže stav z framu 39", async ({ page }) => {
   await open(page, "/predmety/dejepis/otazky/7/studium?simulace=tutor-nedostupny");
   await page.getByRole("button", { name: "Shrň to do tří bodů" }).click();
