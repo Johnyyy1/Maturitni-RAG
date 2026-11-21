@@ -20,7 +20,10 @@ export function AppShell({ variant = "student", children }: { variant?: "student
   const tabBar = variant === "student" && tabs.some((t) => t.href === pathname);
   return (
     <>
-      <Sidebar variant={variant} />
+      {/* Fades out when a focus flow (no sidebar) opens, instead of vanishing. */}
+      <ViewTransition enter="chrome" exit="chrome" default="none">
+        <Sidebar variant={variant} />
+      </ViewTransition>
       {sidebarCollapsed && (
         <div className="fixed top-[22px] left-2.5 z-30 hidden lg:block">
           <GlassIconButton icon={PanelLeft} label="Zobrazit panel" onClick={() => setSidebarCollapsed(false)} />
@@ -29,7 +32,11 @@ export function AppShell({ variant = "student", children }: { variant?: "student
       <ViewTransition name="studium-content" default={{ "nav-back": "nav-back", default: "page" }}>
         <main id="obsah" className={cn("shell-content min-h-dvh pt-(--safe-t) lg:pb-0", tabBar ? "pb-(--tabbar-space)" : "pb-[calc(24px+var(--safe-b))]", sidebarCollapsed ? "lg:pl-[56px]" : "lg:pl-[250px]")}>{children}</main>
       </ViewTransition>
-      {tabBar && <MobileTabBar />}
+      {tabBar && (
+        <ViewTransition enter="chrome" exit="chrome" default="none">
+          <MobileTabBar />
+        </ViewTransition>
+      )}
     </>
   );
 }
@@ -98,7 +105,7 @@ export function MobileTabBar() {
             );
             const body = (
               <>
-                {active && <motion.span aria-hidden layoutId="mobile-tab-lens" transition={reduce ? { duration: 0 } : springMomentum} className="absolute inset-0 rounded-full bg-ring" />}
+                {active && <motion.span aria-hidden layoutId="mobile-tab-lens" transition={reduce ? { duration: 0 } : springMomentum} className="absolute inset-0 -z-10 rounded-full bg-ring" />}
                 <t.icon className="relative" size={22} strokeWidth={active ? 2 : 1.5} aria-hidden />
                 <span className="relative">{t.label}</span>
               </>

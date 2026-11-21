@@ -503,13 +503,31 @@ html:not([data-seen-today]) .today-bar {
 ::view-transition-new(root) {
   animation: none;
 }
-::view-transition-group(.page) {
+/* Two pages never show at once: overlapping unrelated layouts (the old one stretched to the new
+   height) read as a glitch. The old content clears and the new one rises in. */
+::view-transition-group(.page),
+::view-transition-group(.nav-back) {
   animation: none;
 }
-::view-transition-old(.page) {
+::view-transition-old(.page),
+::view-transition-old(.nav-back) {
+  display: none;
+}
+::view-transition-new(.page),
+::view-transition-new(.nav-back) {
+  animation: var(--dur-panel) var(--ease-out) both page-in;
+}
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+/* Sidebar and tab bar entering or leaving with the screen (focus flows, drill-downs). */
+::view-transition-old(.chrome) {
   animation: var(--dur-exit) var(--ease-out) both edge-in reverse;
 }
-::view-transition-new(.page) {
+::view-transition-new(.chrome) {
   animation: var(--dur-exit) var(--ease-out) both edge-in;
 }
 /* Back on mobile: the screen leaves to the right, the previous one comes in from the left (parallax). */
@@ -531,18 +549,13 @@ html:not([data-seen-today]) .today-bar {
 ::view-transition-old(mode-header):not(:only-child) {
   display: none;
 }
-::view-transition-group(.nav-back) {
-  animation: none;
-}
-::view-transition-old(.nav-back) {
-  animation: var(--dur-exit) var(--ease-out) both edge-in reverse;
-}
-::view-transition-new(.nav-back) {
-  animation: var(--dur-exit) var(--ease-out) both edge-in;
-}
 @media (max-width: 1023px) and (prefers-reduced-motion: no-preference) {
   :root[data-nav-back]::view-transition-old(.page),
   ::view-transition-old(.nav-back) {
+    display: block;
+    /* Keep the old screen at its own size instead of stretching it to the new one. */
+    object-fit: none;
+    object-position: top;
     z-index: 1;
     animation: var(--dur-panel) var(--ease-drawer) both vt-out-right;
   }
@@ -581,6 +594,10 @@ html:not([data-seen-today]) .today-bar {
   }
   .stream-in {
     animation-name: fade-in;
+  }
+  ::view-transition-new(.page),
+  ::view-transition-new(.nav-back) {
+    animation-name: edge-in;
   }
   .live {
     animation: none;
