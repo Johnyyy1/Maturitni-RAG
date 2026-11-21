@@ -21,6 +21,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { Beam } from "@/components/ui/beam";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Fragment, memo, useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { Breadcrumb } from "@/components/question";
@@ -223,10 +224,13 @@ export function StudyView({ question }: { question: Question }) {
         {!unavailable && (
           <>
             <div aria-hidden className="pointer-events-none fixed inset-x-0 bottom-(--kb) z-10 h-[calc(var(--composer-h)+var(--chrome-b)+40px)] bg-linear-to-b from-transparent to-(--bg-d) to-60% lg:absolute lg:bottom-0 lg:h-[140px] lg:to-(--surface)" />
+            {/* Positioning lives on this wrapper: the beam's own stylesheet forces its root to position: relative. */}
+            <div className="fixed inset-x-4 bottom-[max(var(--chrome-b),calc(var(--kb)+8px))] z-20 mx-auto max-w-[620px] lg:absolute lg:bottom-7">
+            <Beam>
             <form
               onSubmit={onSubmit}
               style={{ height: composerHeight }}
-              className="composer scroll-lift glass fixed inset-x-4 bottom-[max(var(--chrome-b),calc(var(--kb)+8px))] z-20 mx-auto flex max-w-[620px] items-center gap-2 rounded-full pr-2 pl-5 [--g-blur:24px] [--g-b:30px] lg:absolute lg:bottom-7"
+              className="composer scroll-lift glass flex items-center gap-2 rounded-full pr-2 pl-5 [--g-blur:24px] [--g-b:30px]"
             >
               <label htmlFor="dotaz" className="sr-only">
                 Dotaz pro tutora
@@ -259,6 +263,8 @@ export function StudyView({ question }: { question: Question }) {
                 </IconSwap>
               </button>
             </form>
+            </Beam>
+            </div>
           </>
         )}
       </section>
