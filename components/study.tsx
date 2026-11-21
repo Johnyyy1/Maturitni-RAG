@@ -9,11 +9,9 @@ import {
   List,
   ListChecks,
   MessageCircleQuestion,
-  MessageSquareOff,
   Network,
   Quote,
   RotateCw,
-  Sparkles,
   Square,
   ThumbsDown,
   ThumbsUp,
@@ -31,6 +29,7 @@ import { Sheet } from "@/components/ui/sheet";
 import { askTutor, TutorUnavailableError } from "@/lib/api";
 import { questionHref } from "@/lib/mock/questions";
 import { IconSwap } from "@/components/ui/icon-swap";
+import { TutorAvatar } from "@/components/ui/tutor-avatar";
 import { inspector } from "@/lib/motion";
 import { cn } from "@/lib/cn";
 import type { Question, Source, TutorMessage } from "@/lib/types";
@@ -332,9 +331,7 @@ const TutorAnswer = memo(function TutorAnswer({
   return (
     <article aria-label="Odpověď tutora" aria-busy={msg.streaming} className="flex flex-col gap-3.5">
       <div className="flex items-center gap-2">
-        <span aria-hidden className="mesh-hero flex size-[22px] items-center justify-center rounded-full text-white">
-          <Sparkles size={12} strokeWidth={2} />
-        </span>
+        <TutorAvatar size={28} state={msg.streaming ? "working" : "default"} />
         <span className="text-[13px] font-semibold">Tutor</span>
         <span className="text-[13px] text-muted">z ověřených podkladů</span>
       </div>
@@ -417,7 +414,7 @@ export function TutorUnavailable({ onRetry, caption }: { onRetry: () => void; ca
       <h2 className="text-[22px] font-semibold tracking-[-0.5px]">Chat je dočasně nedostupný</h2>
       <p className="mt-1.5 max-w-[440px] text-[15px] leading-[1.5] text-white/80">Studijní podklady můžeš dál otevřít. Zkusíme to znovu automaticky.</p>
       <div className="glass-thin glass-on-hero mt-[18px] flex h-14 items-center gap-2.5 rounded-full pr-2 pl-[18px] [--g-blur:24px] [--g-y:8px] [--g-b:24px]">
-        <MessageSquareOff size={18} strokeWidth={1.5} className="text-white/80" aria-hidden />
+        <TutorAvatar size={28} state="sleeping" theme="dark" />
         <span className="flex-1 text-[15px] text-white/80">Tutor teď neodpovídá</span>
         <button type="button" onClick={onRetry} className="press flex h-10 items-center gap-1.5 rounded-full bg-white px-4 text-[14px] font-semibold text-[#14182B]">
           <RotateCw size={15} strokeWidth={2} aria-hidden />

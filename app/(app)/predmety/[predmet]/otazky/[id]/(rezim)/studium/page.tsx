@@ -1,11 +1,12 @@
 import { Suspense } from "react";
 import { RouteLoading } from "@/components/loading";
-import { BookX, ChevronLeft } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import type { Metadata } from "next";
 import { ReportSourceButton } from "@/components/actions";
 import { StudyView } from "@/components/study";
 import { GlassIconButton } from "@/components/ui/buttons";
 import { StateCard } from "@/components/ui/state";
+import { TutorAvatar } from "@/components/ui/tutor-avatar";
 import { loadQuestion, questionParams } from "@/lib/load";
 import { questionHref } from "@/lib/mock/questions";
 
@@ -37,8 +38,7 @@ async function StudyPageContent({ params }: PageProps<"/predmety/[predmet]/otazk
         <h1 className="text-[32px] leading-[1.1] font-semibold tracking-[-0.9px]">{question.title}</h1>
         <StateCard
           role="status"
-          icon={BookX}
-          tone="warning"
+          avatar={<TutorAvatar size={44} />}
           title="K této části nemám ověřený podklad"
           text="Tutor neodpoví, dokud nenajde zdroj v balíčku. Můžeš otevřít osnovu nebo napsat redakci."
           actions={<ReportSourceButton />}

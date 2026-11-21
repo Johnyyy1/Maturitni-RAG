@@ -1,4 +1,4 @@
-import { BookOpen, CircleAlert, FileText, KeyRound, Layers2, List, Search, SearchX, X, BookX } from "lucide-react";
+import { BookOpen, CircleAlert, FileText, KeyRound, Layers2, List, Search, SearchX, X } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
@@ -10,6 +10,7 @@ import { OptionRow } from "@/components/ui/option-row";
 import { GlassSearch } from "@/components/ui/search";
 import { Segmented } from "@/components/ui/segmented";
 import { StateCard } from "@/components/ui/state";
+import { TutorAvatar } from "@/components/ui/tutor-avatar";
 
 export const metadata: Metadata = { title: "Design systém" };
 
@@ -119,8 +120,7 @@ export default function DesignPage() {
           <StateCard
             caption="Studium · bez podkladu"
             className="min-h-[300px]"
-            icon={BookX}
-            tone="warning"
+            avatar={<TutorAvatar size={44} />}
             title="K této části nemám ověřený podklad"
             text="Tutor neodpoví, dokud nenajde zdroj v balíčku. Můžeš otevřít osnovu nebo napsat redakci."
             actions={

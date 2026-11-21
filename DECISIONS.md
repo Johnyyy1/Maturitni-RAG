@@ -61,6 +61,7 @@ Funkční navíc:
 - **Klávesové zkratky reagují okamžitě.** Mezerník odhalí odpověď krátkým prolnutím. Kliknutí přidá blur 2 → 0 px za 180 ms. Obě strany sdílí jednu buňku mřížky a karta si při odhalení zachová výšku.
 - **Kartičky jsou balíček.** Pod horní kartou vykukují až dvě neprůhledné karty. Po hodnocení ukazatelem horní karta odchází doleva, doprava nebo nahoru podle akce. Na dotyku lze ohodnotit i tažením. Karta se otáčí ve 3D a i hodnocení klávesami 1–3 ji pošle odpovídajícím směrem; omezený pohyb ponechá prolnutí.
 - **Inspektor, bottom sheet a ⌘K.** Inspektor přichází zprava, mobilní sheet zdola a ⌘K se zobrazí okamžitě.
+- **Tutor má tvář.** Animovaný avatar `bot-avatars` (vždy tvar „clover“, `components/ui/tutor-avatar.tsx`) je jen u tutora: v hlavičce odpovědi pracuje během streamu, při výpadku spí a ve stavu bez podkladu nahrazuje ikonu. Jinde se nepoužívá, aby vždy znamenal tutora.
 
 ## Next.js 16
 

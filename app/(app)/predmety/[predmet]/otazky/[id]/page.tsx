@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { RouteLoading } from "@/components/loading";
-import { BookOpen, BookX, ChevronLeft, Clock3, History, Mic, Network } from "lucide-react";
+import { BookOpen, ChevronLeft, Clock3, History, Mic, Network } from "lucide-react";
 import type { Metadata } from "next";
 import { BookmarkButton, ReportSourceButton } from "@/components/actions";
 import { DataIcon } from "@/components/icon";
@@ -9,6 +9,7 @@ import { TopBar } from "@/components/shell/app-shell";
 import { Card, Chip } from "@/components/ui/bits";
 import { GlassButton, GlassIconButton, PrimaryPill } from "@/components/ui/buttons";
 import { StateCard } from "@/components/ui/state";
+import { TutorAvatar } from "@/components/ui/tutor-avatar";
 import { loadQuestion, questionParams } from "@/lib/load";
 import { questionHref } from "@/lib/mock/questions";
 import type { Question } from "@/lib/types";
@@ -178,8 +179,7 @@ function NoSource({ className }: { className?: string }) {
     <StateCard
       className={className}
       role="status"
-      icon={BookX}
-      tone="warning"
+      avatar={<TutorAvatar size={44} />}
       title="K této části nemám ověřený podklad"
       text="Tutor neodpoví, dokud nenajde zdroj v balíčku. Můžeš otevřít osnovu nebo napsat redakci."
       actions={<ReportSourceButton />}
