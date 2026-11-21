@@ -8,7 +8,7 @@ import { useTheme } from "next-themes";
 import { useMicrophone, VoiceBeam } from "voice-glow";
 import { IconSwap } from "@/components/ui/icon-swap";
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useState, type FormEvent } from "react";
+import { useEffect, useId, useState, useSyncExternalStore, type FormEvent } from "react";
 import { ActionBar, capsule, FocusBar } from "@/components/focus";
 import { GlassButton, GlassIconButton, PrimaryPill } from "@/components/ui/buttons";
 import { Sheet } from "@/components/ui/sheet";
@@ -26,6 +26,8 @@ function useElapsed() {
   }, []);
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
 }
+
+const noop = () => () => {};
 
 function readDraft(key: string) {
   try {
@@ -85,6 +87,8 @@ function TextTask({ question }: { question: Question }) {
   const mic = useMicrophone();
   const live = mic.state === "live";
   const { resolvedTheme } = useTheme();
+  // resolvedTheme is unknown on the server; VoiceBeam's inline styles depend on it, so match the server until hydrated.
+  const hydrated = useSyncExternalStore(noop, () => true, () => false);
 
   async function toggleMic() {
     if (live) return mic.stop();
@@ -164,9 +168,9 @@ function TextTask({ question }: { question: Question }) {
           {exam.title}
         </h1>
         <p className="mt-2.5 text-[16px] leading-[1.5] text-muted lg:mt-3 lg:text-[17px]">{exam.prompt}</p>
-        <VoiceBeam stream={mic.stream} theme={resolvedTheme === "dark" ? "dark" : "light"}
+        <VoiceBeam stream={mic.stream} theme={hydrated && resolvedTheme === "dark" ? "dark" : "light"}
           // The default preset is tuned for a ~350px chat input; this field is up to ~700px wide.
-          scale={2} strength={1}
+          scale={2} strength={1} active={live}
           className="mt-[18px] flex flex-1 flex-col lg:mt-6">
         <div className="surface flex flex-1 flex-col rounded-[22px] p-[18px] lg:rounded-[18px] lg:bg-app lg:px-5 lg:shadow-[inset_0_0_0_1px_var(--ring-strong)]">
           <label htmlFor={fieldId} className="sr-only">
